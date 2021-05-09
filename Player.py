@@ -33,8 +33,8 @@ class Player:
             self.played[(self.playerid + 2) % 3].append(request["history"][1])
         for response in object["responses"][start:]:
             self.played[self.playerid].append(response["response"])
+            self.cardhand.remove(response["response"])
     def action(self, object):
-        print(object)
         self.resume(json.loads(object))
         response = self.customize_action()
         return json.dumps({"response": response})

@@ -3,6 +3,8 @@ import tkinter.messagebox
 from PIL import Image, ImageTk
 from GameEngine import GameEngine
 from Human import Human
+from AINegative import AINegative
+import os
 
 def flattenAlpha(img):
     alpha = img.split()[-1]  # Pull off the alpha layer
@@ -27,9 +29,6 @@ class Application(tk.Tk):
     def __init__(self, master):
         self.init_images()
         self.game = GameEngine()
-        self.game.registerPlayer(0, Human())
-        self.game.registerPlayer(1, Human())
-        self.game.registerPlayer(2, Human())
         self.master = master
         master.title("斗地主 - 桌面版")
 
@@ -65,9 +64,9 @@ class Application(tk.Tk):
         self.label4 = tk.Label(self.middleside, text="玩家")
         self.label5 = tk.Label(self.middleside, text="上一轮")
         self.label6 = tk.Label(self.middleside, text="总分")
-        self.label7 = tk.Label(self.middleside, text=f"0: {self.game.players[0].name}")
-        self.label8 = tk.Label(self.middleside, text=f"1: {self.game.players[1].name}")
-        self.label9 = tk.Label(self.middleside, text=f"2: {self.game.players[2].name}")
+        self.label7 = tk.Label(self.middleside, text=f"0: 玩家")
+        self.label8 = tk.Label(self.middleside, text=f"1: 玩家")
+        self.label9 = tk.Label(self.middleside, text=f"2: 玩家")
         self.label10 = tk.Label(self.middleside, text="")
         self.label11 = tk.Label(self.middleside, text="")
         self.label12 = tk.Label(self.middleside, text="")
@@ -88,8 +87,8 @@ class Application(tk.Tk):
         self.label15.grid(row=7, column=2)
 
         self.reveal = tk.IntVar()
-        self.hide_radio = tk.Radiobutton(self.lowerside, text = "显示所有手牌", var = self.reveal, value = 0)
-        self.reveal_radio = tk.Radiobutton(self.lowerside, text="隐藏AI手牌", var=self.reveal, value=1)
+        self.hide_radio = tk.Radiobutton(self.lowerside, text = "隐藏AI手牌", var = self.reveal, value = 0)
+        self.reveal_radio = tk.Radiobutton(self.lowerside, text="显示AI手牌", var=self.reveal, value=1)
         self.hide_radio.grid(row = 0, column = 0)
         self.reveal_radio.grid(row = 1, column = 0)
         self.reveal.set(0)
@@ -104,6 +103,28 @@ class Application(tk.Tk):
 
         self.passround = tk.Button(self.main, text="不出", command=self.passfunc)
         self.playround = tk.Button(self.main, text="出牌", command=self.playfunc)
+
+        self.player0 = tk.StringVar()
+        self.player1 = tk.StringVar()
+        self.player2 = tk.StringVar()
+        options = ["Human"] + [word[2:-3] for word in os.listdir(os.getcwd()) if word[:2] == "AI"]
+        self.player0.set("Human")
+        self.player1.set("Human")
+        self.player2.set("Human")
+        self.player0choice = tk.OptionMenu(self.lowerside, self.player0, *options)
+        self.player1choice = tk.OptionMenu(self.lowerside, self.player1, *options)
+        self.player2choice = tk.OptionMenu(self.lowerside, self.player2, *options)
+
+        self.labelplayer0 = tk.Label(self.lowerside, text = "玩家 0")
+        self.labelplayer1 = tk.Label(self.lowerside, text="玩家 1")
+        self.labelplayer2 = tk.Label(self.lowerside, text="玩家 2")
+
+        self.labelplayer0.grid(row = 4, column = 0)
+        self.player0choice.grid(row = 5, column = 0)
+        self.labelplayer1.grid(row = 6, column = 0)
+        self.player1choice.grid(row = 7, column = 0)
+        self.labelplayer2.grid(row = 8, column = 0)
+        self.player2choice.grid(row = 9, column = 0)
 
         self.running = False
 
@@ -158,9 +179,15 @@ class Application(tk.Tk):
             self.update()
             self.running = True
 
+    def registerPlayer(self, num, word):
+        if word != "Human":
+            word = "AI" + word
+        self.game.registerPlayer(num, eval(word)())
+
     def update(self):
-        #print(self.game.stage)
-        #print(self.selected)
+        self.registerPlayer(0, self.player0.get())
+        self.registerPlayer(1, self.player1.get())
+        self.registerPlayer(2, self.player2.get())
         self.main.delete("all")
         self.show_below()
         self.show_left()
@@ -176,6 +203,10 @@ class Application(tk.Tk):
             self.hide_play()
             self.startbutton.place(x = 500, y = 400, anchor = "s")
             self.startbutton.config(text="再来一局")
+        if not self.game.players[self.game.curplayer].isHuman and self.game.stage != "计分阶段":
+            res = self.game.step()
+            if not res:
+                print("INVALID!")
         self.master.after(200, self.update)
 
 
@@ -252,6 +283,9 @@ class Application(tk.Tk):
             self.value1.config(text="")
             self.value3.config(text="")
             self.value2.config(text="")
+        self.label7.config(text=f"0: {self.game.players[0].name}")
+        self.label8.config(text=f"1: {self.game.players[1].name}")
+        self.label9.config(text=f"2: {self.game.players[2].name}")
         self.label10.config(text = str(self.game.lastscores[0]))
         self.label11.config(text=str(self.game.lastscores[1]))
         self.label12.config(text=str(self.game.lastscores[2]))
