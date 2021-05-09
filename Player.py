@@ -12,6 +12,7 @@ class Player:
         self.played = [[], [], []]
         self.curstage = None
         self.isHuman = False
+        self.name = "玩家"
     def resume(self, object):
         start = 0
         first_request = object["requests"][0]

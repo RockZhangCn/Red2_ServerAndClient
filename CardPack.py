@@ -26,8 +26,8 @@ class CardPack:
         if sum(self.cards) == 2:
             if maxcount == 2:
                 return "对子", 3, card_by_count[1][0], None, None
-            if card_by_count[0] == [52, 53]:
-                return "火箭", 30030, 13, None, None
+            if card_by_count[0] == [13, 14]:
+                return "火箭", 30030, 15, None, None
         if maxcount == 1:
             tmp = card_by_count[0]
             if is_cont(tmp) and max(tmp) < 12 and len(tmp) >= 5:

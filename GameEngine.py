@@ -36,6 +36,7 @@ class GameEngine:
         self.players[id_player] = player
     def step(self, res = None):
         print(self.stage)
+        print("Input:", res)
         if self.stage == "叫牌阶段":
             self.messages[self.curplayer]["requests"].append({
                 "own": self.cardhands[self.curplayer].to_card_list(),
@@ -49,6 +50,12 @@ class GameEngine:
             self.messages[self.curplayer]["responses"].append(response)
             new_bid = int(response["response"])
             self.bids.append(new_bid)
+            if self.base and 0 < new_bid <= self.base:
+                # invalid
+                self.messages[self.curplayer]["requests"].pop(-1)
+                self.messages[self.curplayer]["responses"].pop(-1)
+                self.bids.pop(-1)
+                return False
             if new_bid != 0:
                 self.base = new_bid
                 self.largestplayer = self.curplayer
@@ -62,7 +69,7 @@ class GameEngine:
                     self.base = 1
                     self.lord = (self.curplayer + 1) % 3
                 else:
-                    self.lord = self.largestplayerplayer
+                    self.lord = self.largestplayer
             if self.lord is not None:
                 self.cardhands[self.lord].insert(self.public)
                 self.curplayer = self.lord
@@ -72,10 +79,6 @@ class GameEngine:
         elif self.stage == "出牌阶段":
             print("Cur hand: ", self.cardhands[self.curplayer])
             print("Cur Lord: ", self.lord)
-            if self.curplayer != self.lord:
-                self.spring = False
-            if self.curplayer == self.lord and self.curround != 0:
-                self.antispring = False
             if self.curround == 0:
                 self.messages[self.curplayer]["requests"].append({
                     "history": [self.round[(self.curplayer + 1) % 3], self.round[(self.curplayer + 2) % 3]],
@@ -94,10 +97,34 @@ class GameEngine:
                 response = json.loads(self.players[self.curplayer].action(request))
             else:
                 response = {"response": res}
+
             self.messages[self.curplayer]["responses"].append(response)
             played = response["response"]
             self.round[self.curplayer] = played
+
+            invalid = False
+            if self.round[(self.curplayer + 1) % 3] == [] and self.round[(self.curplayer + 2) % 3] == []:
+                if len(played) == 0:
+                    invalid = True
+                elif CardPack.from_card_list(played).type_str == "非法":
+                    invalid = True
+            elif len(played) > 0 and self.round[(self.curplayer + 2) % 3] != []:
+                if not CardPack.from_card_list(played).can_beat(CardPack.from_card_list(self.round[(self.curplayer + 2) % 3])):
+                    invalid = True
+            elif len(played) > 0:
+                if not CardPack.from_card_list(played).can_beat(CardPack.from_card_list(self.round[(self.curplayer + 1) % 3])):
+                    invalid = True
+            if invalid:
+                self.messages[self.curplayer]["requests"].pop(-1)
+                self.messages[self.curplayer]["responses"].pop(-1)
+                self.round[self.curplayer] = []
+                return False
+
             if len(played) > 0:
+                if self.curplayer != self.lord:
+                    self.spring = False
+                if self.curplayer == self.lord and self.curround != 0:
+                    self.antispring = False
                 self.largestplayer = self.curplayer
                 self.cardhands[self.curplayer].remove(played)
                 print(played)
@@ -126,6 +153,7 @@ class GameEngine:
                 else:
                     self.lastscores[i] = base_score * (-1 if self.arg else 1)
                     self.cumscores[i] += base_score * (-1 if self.arg else 1)
+        return True
     def __repr__(self):
         print(self.cardhands[0])
         print(self.cardhands[1])

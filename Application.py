@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.messagebox
 from PIL import Image, ImageTk
 from GameEngine import GameEngine
 from Human import Human
@@ -64,9 +65,9 @@ class Application(tk.Tk):
         self.label4 = tk.Label(self.middleside, text="玩家")
         self.label5 = tk.Label(self.middleside, text="上一轮")
         self.label6 = tk.Label(self.middleside, text="总分")
-        self.label7 = tk.Label(self.middleside, text="玩家1")
-        self.label8 = tk.Label(self.middleside, text="玩家2")
-        self.label9 = tk.Label(self.middleside, text="玩家3")
+        self.label7 = tk.Label(self.middleside, text=f"0: {self.game.players[0].name}")
+        self.label8 = tk.Label(self.middleside, text=f"1: {self.game.players[1].name}")
+        self.label9 = tk.Label(self.middleside, text=f"2: {self.game.players[2].name}")
         self.label10 = tk.Label(self.middleside, text="")
         self.label11 = tk.Label(self.middleside, text="")
         self.label12 = tk.Label(self.middleside, text="")
@@ -87,11 +88,14 @@ class Application(tk.Tk):
         self.label15.grid(row=7, column=2)
 
         self.reveal = tk.IntVar()
-        self.hide_radio = tk.Radiobutton(self.lowerside, text = "Hide Others", var = self.reveal, value = 0)
-        self.reveal_radio = tk.Radiobutton(self.lowerside, text="Reveal Others", var=self.reveal, value=1)
+        self.hide_radio = tk.Radiobutton(self.lowerside, text = "显示所有手牌", var = self.reveal, value = 0)
+        self.reveal_radio = tk.Radiobutton(self.lowerside, text="隐藏AI手牌", var=self.reveal, value=1)
         self.hide_radio.grid(row = 0, column = 0)
         self.reveal_radio.grid(row = 1, column = 0)
         self.reveal.set(0)
+
+        self.reset_button = tk.Button(self.lowerside, text = "重新发牌(调试)", command = self.startgame)
+        self.reset_button.grid(row = 2, column = 0)
 
         self.bid0 = tk.Button(self.main, text="不叫", command=self.bid0func)
         self.bid1 = tk.Button(self.main, text="1分", command=self.bid1func)
@@ -101,25 +105,31 @@ class Application(tk.Tk):
         self.passround = tk.Button(self.main, text="不出", command=self.passfunc)
         self.playround = tk.Button(self.main, text="出牌", command=self.playfunc)
 
+        self.running = False
+
     def bid0func(self):
-        self.game.step(0)
+        self.wrap(self.game.step(0))
 
     def bid1func(self):
-        self.game.step(1)
+        self.wrap(self.game.step(1))
 
     def bid2func(self):
-        self.game.step(2)
+        self.wrap(self.game.step(2))
 
     def bid3func(self):
-        self.game.step(3)
+        self.wrap(self.game.step(3))
 
     def passfunc(self):
-        self.game.step([])
+        self.wrap(self.game.step([]))
 
     def playfunc(self):
         cards = [self.game.getPlayerHand(self.game.curplayer)[i] for i in self.selected]
-        self.game.step(cards)
         self.selected = []
+        self.wrap(self.game.step(cards))
+
+    def wrap(self, value):
+        if not value:
+            tk.messagebox.showinfo("Error", "Invalid Operation!")
 
     def init_images(self):
         for i in range(54):
@@ -136,9 +146,17 @@ class Application(tk.Tk):
         self.image_background = ImageTk.PhotoImage(flattenAlpha(Image.open(f"./image/blue_back.png").resize((90, 137), Image.ANTIALIAS)))
 
     def startgame(self):
-        self.game.newgame()
         self.startbutton.place_forget()
-        self.update()
+        self.bid0.place_forget()
+        self.bid1.place_forget()
+        self.bid2.place_forget()
+        self.bid3.place_forget()
+        self.passround.place_forget()
+        self.playround.place_forget()
+        self.game.newgame()
+        if not self.running:
+            self.update()
+            self.running = True
 
     def update(self):
         #print(self.game.stage)
@@ -158,7 +176,6 @@ class Application(tk.Tk):
             self.hide_play()
             self.startbutton.place(x = 500, y = 400, anchor = "s")
             self.startbutton.config(text="再来一局")
-
         self.master.after(200, self.update)
 
 
@@ -231,6 +248,10 @@ class Application(tk.Tk):
             self.value1.config(text = str(self.game.base))
             self.value3.config(text = ["本家","右家","左家"][self.game.lord])
             self.value2.config(text = str(self.game.multiplier))
+        else:
+            self.value1.config(text="")
+            self.value3.config(text="")
+            self.value2.config(text="")
         self.label10.config(text = str(self.game.lastscores[0]))
         self.label11.config(text=str(self.game.lastscores[1]))
         self.label12.config(text=str(self.game.lastscores[2]))
