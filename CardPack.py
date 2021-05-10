@@ -70,7 +70,7 @@ class CardPack:
                 if self.length is None or self.length == other.length:
                     if self.rank > other.rank:
                         return True
-        if self.type_num % other.type_num == 0:
+        if self.type_num != other.type_num and self.type_num % other.type_num == 0:
             return True
         return False
 
