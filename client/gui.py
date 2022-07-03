@@ -4,6 +4,7 @@ import tkinter as tk  # 使用Tkinter前需要先导入
 import tkinter.messagebox
 
 from PIL import Image, ImageTk
+from PIL.ImageTk import PhotoImage
 
 from common.player import ClientPlayer
 from common.player_status import PlayerStatus
@@ -540,6 +541,11 @@ class Application(object):
 if __name__ == "__main__":
     window = tk.Tk()
     window.title('红二')
+
+    icon = PhotoImage(file='image/icon.png')
     window.geometry('1400x1080')  # 这里的乘是小x
+    window.tk.call('wm', 'iconphoto', window._w, icon)
     app = Application(window)
     window.mainloop()
+
+
