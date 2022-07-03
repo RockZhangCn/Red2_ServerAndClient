@@ -13,15 +13,18 @@ from log.log import logger
 
 class Application(object):
     def __init__(self, window):
-        self.__center_pokers_list = []
-        self.next_pos = 0
-        self.we_seat_pos = -1
         self.__window = window
         self.width = window.winfo_screenwidth()
         self.__window.protocol("WM_DELETE_WINDOW", self.close_all)
+
+        self.__center_pokers_list = []
+        self.next_pos = 0
+        self.we_seat_pos = -1
         self.player = None
         self.__selected_poker_list = list()
         self.__poker_lists = []
+        # canvas draw unit id list.
+        self.__poker_id = []
 
         self.timer_show = ImageTk.PhotoImage(
             Image.open(f"image/timer.png").resize((80, 105), Image.ANTIALIAS))
@@ -30,6 +33,7 @@ class Application(object):
         self.image_background = ImageTk.PhotoImage(
             Image.open(f"image/green_back.png").resize((120, 180), Image.ANTIALIAS))
 
+        # poker index.
         self.images = []
         for i in range(54):
             self.images.append(
@@ -45,22 +49,19 @@ class Application(object):
         self.top_user_panel = tk.Frame(root, width=self.width, height=250)
         self.top_user_panel.pack(side="top", padx=1, pady=1, fill="x")
 
-        self.top_user_name = tk.StringVar()
-        self.top_user_name.set("null")
-        self.top_name_label = tk.Label(self.top_user_panel, textvariable=self.top_user_name, font=("黑体", 16))
+        self.top_user_name_value = tk.StringVar()
+        self.top_user_name_value.set("null")
+        self.top_name_label = tk.Label(self.top_user_panel, textvariable=self.top_user_name_value, font=("黑体", 16))
         self.top_name_label.pack(side="top")
 
-        self.top_info_value = tk.StringVar()
-        self.top_info_value.set("null")
-        top_info_label = tk.Label(self.top_user_panel, bg="#FFFFE0", textvariable=self.top_info_value, font=("黑体", 16))
+        self.top_message_value = tk.StringVar()
+        self.top_message_value.set("null")
+        top_info_label = tk.Label(self.top_user_panel, bg="#FFFFE0", textvariable=self.top_message_value, font=("黑体", 16))
         top_info_label.pack(side="top", fill="x")
 
         # self.poker_canvas
         self.top_poker_canvas = tk.Canvas(self.top_user_panel, width=self.width, height=220)
         self.top_poker_canvas.pack(side="top", anchor="center")
-
-        # self.show_top_timer()
-        # self.show_top_pokers([])
 
         # 　中部　　　又纵分了　左　中　右　三大部分。
         main_panel = tk.Frame(root)
@@ -73,13 +74,6 @@ class Application(object):
         # self.poker_canvas
         self.bottom_poker_canvas = tk.Canvas(self.bottom_user_panel, width=self.width, height=220)
         self.bottom_poker_canvas.pack(side="top", anchor="center")
-
-        # self.__poker_lists = [3, 7, 11, 15, 19, 24, 33, 37, 46, 51]
-        # self.__poker_lists.sort(reverse=True)
-
-        self.__poker_id = []
-        # self.show_bottom_pokers()
-        # self.show_bottom_timer()
 
         self.bottom_button_panel = tk.Frame(self.bottom_user_panel, width=self.width, height=100)
         self.bottom_button_panel.pack(side="top", anchor="n")
@@ -96,7 +90,7 @@ class Application(object):
                                           command=self.button_skip)
         self.user_button_skip.pack(side="left", padx=10)
 
-        self.user_button_alone = tk.Button(self.bottom_button_panel, text="抢2", font=('Arial', 16),
+        self.user_button_alone = tk.Button(self.bottom_button_panel, text="打独", font=('Arial', 16),
                                            command=self.button_hijack_2)
         self.user_button_alone.pack(side="left", padx=10)
 
@@ -128,21 +122,21 @@ class Application(object):
                                        justify="right")
         label_login_address.pack(side="left", fill="y")
 
-        self.bottom_user_name = tk.StringVar()
-        self.bottom_user_name.set("")
-        self.bottom_user_name_ctrl = tk.Entry(self.bottom_info, textvariable=self.bottom_user_name, font=('Arial', 18),
-                                              width=10)  # 显示成明文形式
-        self.bottom_user_name_ctrl.insert(tk.END, 'nian')
-        self.bottom_user_name_ctrl.pack(side="left", padx=20)
+        self.bottom_user_name_value = tk.StringVar()
+        self.bottom_user_name_value.set("")
+        self.bottom_user_name_widget = tk.Entry(self.bottom_info, textvariable=self.bottom_user_name_value, font=('Arial', 18),
+                                                width=10)  # 显示成明文形式
+        self.bottom_user_name_widget.insert(tk.END, 'nian')
+        self.bottom_user_name_widget.pack(side="left", padx=20)
 
         self.user_button_login = tk.Button(self.bottom_info, text="登陆", font=('Arial', 18),
                                            command=self.button_login)
         self.user_button_login.pack(side="left", padx=20, pady=5)
 
         # 底部填充
-        self.bottom_info_value = tk.StringVar()
-        self.bottom_info_value.set("no message here.")
-        label_info = tk.Label(self.bottom_info, textvariable=self.bottom_info_value, font=('Arial', 18), height=1,
+        self.bottom_message_value = tk.StringVar()
+        self.bottom_message_value.set("no message here.")
+        label_info = tk.Label(self.bottom_info, textvariable=self.bottom_message_value, font=('Arial', 18), height=1,
                               bg="#ADD8E6",
                               justify="left")
         label_info.pack(side="left", expand=True, fill="x")
@@ -151,24 +145,20 @@ class Application(object):
         self.left_user_panel = tk.Frame(main_panel)
         self.left_user_panel.pack(side="left", fill="y", anchor="w")
 
-        self.left_user_name = tk.StringVar()
-        self.left_user_name.set("null")
-        left_name_label = tk.Label(self.left_user_panel, textvariable=self.left_user_name, font=("黑体", 16))
+        self.left_user_name_value = tk.StringVar()
+        self.left_user_name_value.set("null")
+        left_name_label = tk.Label(self.left_user_panel, textvariable=self.left_user_name_value, font=("黑体", 16))
         left_name_label.pack(side="top", fill="x")
 
-        self.left_info_value = tk.StringVar()
-        self.left_info_value.set("null")
-        left_info_label = tk.Label(self.left_user_panel, bg="#FFFFE0", textvariable=self.left_info_value,
+        self.left_message_value = tk.StringVar()
+        self.left_message_value.set("null")
+        left_info_label = tk.Label(self.left_user_panel, bg="#FFFFE0", textvariable=self.left_message_value,
                                    font=("黑体", 16))
         left_info_label.pack(side="top", fill="x")
 
         # self.poker_canvas
         self.left_poker_canvas = tk.Canvas(self.left_user_panel, width=300)
         self.left_poker_canvas.pack(side="top", fill="y", anchor="center", expand=True)
-
-        # show left timer
-        # self.show_left_timer()
-        # self.show_left_pokers([])
 
         # middle panel
         self.center_panel = tk.Frame(main_panel, bd=4, relief='groove', bg="#F0FFF0")
@@ -181,22 +171,20 @@ class Application(object):
         self.right_user_panel = tk.Frame(main_panel)
         self.right_user_panel.pack(side="right", fill="y", anchor="e")
 
-        self.right_user_name = tk.StringVar()
-        self.right_user_name.set("null")
-        right_name_label = tk.Label(self.right_user_panel, textvariable=self.right_user_name, font=("黑体", 16))
+        self.right_user_name_value = tk.StringVar()
+        self.right_user_name_value.set("null")
+        right_name_label = tk.Label(self.right_user_panel, textvariable=self.right_user_name_value, font=("黑体", 16))
         right_name_label.pack(side="top", fill="x")
 
-        self.right_info_value = tk.StringVar()
-        self.right_info_value.set("null")
-        right_info_label = tk.Label(self.right_user_panel, bg="#FFFFE0", textvariable=self.right_info_value,
+        self.right_message_value = tk.StringVar()
+        self.right_message_value.set("null")
+        right_info_label = tk.Label(self.right_user_panel, bg="#FFFFE0", textvariable=self.right_message_value,
                                     font=("黑体", 16))
         right_info_label.pack(side="top", fill="x")
 
         # self.poker_canvas
         self.right_poker_canvas = tk.Canvas(self.right_user_panel, width=300)
         self.right_poker_canvas.pack(side="top", fill="y", anchor="center", expand=True)
-        # self.show_right_timer()
-        # self.show_right_pokers([])
 
         self.disable_buttons()
 
@@ -278,12 +266,12 @@ class Application(object):
 
                     # self login success.
                     if player_status == PlayerStatus.Logined.value:
-                        if self.bottom_user_name_ctrl.get() == player_name and msg['notify_pos'] == seat_pos:
+                        if self.bottom_user_name_widget.get() == player_name and msg['notify_pos'] == seat_pos:
                             tkinter.messagebox.showinfo(title='登录成功',
                                                         message='欢迎就座, seated pos {}'.format(seat_pos))
                             self.show_bottom_message('登录成功, 位置{}'.format(seat_pos))
                             self.we_seat_pos = seat_pos
-                            self.bottom_user_name_ctrl.config(state="disabled")
+                            self.bottom_user_name_widget.config(state="disabled")
                             self.user_button_login.config(state="disabled")
                             self.user_button_start.config(state="active")
 
@@ -303,15 +291,15 @@ class Application(object):
 
                     if player_status == PlayerStatus.Logined.value:
                         if seat_pos == (self.we_seat_pos + 1) % 4:
-                            self.right_user_name.set(player_name)
+                            self.right_user_name_value.set(player_name)
                             self.show_right_message("上线了")
                         # face
                         elif seat_pos == (self.we_seat_pos + 2) % 4:
-                            self.top_user_name.set(player_name)
+                            self.top_user_name_value.set(player_name)
                             self.show_top_message("上线了")
                         # left.
                         elif seat_pos == (self.we_seat_pos + 3) % 4:
-                            self.left_user_name.set(player_name)
+                            self.left_user_name_value.set(player_name)
                             self.show_left_message("上线了")
                         elif seat_pos == self.we_seat_pos:
                             pass
@@ -321,15 +309,15 @@ class Application(object):
                                                                                                 seat_pos))
                     elif player_status == PlayerStatus.Started.value:
                         if seat_pos == (self.we_seat_pos + 1) % 4:
-                            self.right_user_name.set(player_name)
+                            self.right_user_name_value.set(player_name)
                             self.show_right_message("准备好了")
                         # face
                         elif seat_pos == (self.we_seat_pos + 2) % 4:
-                            self.top_user_name.set(player_name)
+                            self.top_user_name_value.set(player_name)
                             self.show_top_message("准备好了")
                         # left.
                         elif seat_pos == (self.we_seat_pos + 3) % 4:
-                            self.left_user_name.set(player_name)
+                            self.left_user_name_value.set(player_name)
                             self.show_left_message("准备好了")
                         elif seat_pos == self.we_seat_pos:
                             self.show_bottom_message("准备好了")
@@ -389,7 +377,6 @@ class Application(object):
                         else:
                             logger.fatal("We have got a incorrect position.")
 
-
                     elif player_status == PlayerStatus.RunOut:
                         if seat_pos == (self.we_seat_pos + 1) % 4:
                             self.show_right_message("出完了")
@@ -410,16 +397,16 @@ class Application(object):
         self.bottom_poker_canvas.create_image(self.next_pos, 110, anchor='e', image=self.timer_show)
 
     def show_bottom_message(self, message):
-        self.bottom_info_value.set(message)
+        self.bottom_message_value.set(message)
 
     def show_top_message(self, message):
-        self.top_info_value.set(message)
+        self.top_message_value.set(message)
 
     def show_left_message(self, message):
-        self.left_info_value.set(message)
+        self.left_message_value.set(message)
 
     def show_right_message(self, message):
-        self.right_info_value.set(message)
+        self.right_message_value.set(message)
 
     ####
     def show_left_timer(self):
@@ -461,8 +448,8 @@ class Application(object):
             self.center_poker_canvas.create_image(x, y, anchor='e', image=self.images[card])
 
     def button_login(self):
-        logger.info(self.bottom_user_name_ctrl.get() + " will sit down.")
-        self.player = ClientPlayer(self.bottom_user_name_ctrl.get(), pos=-1, ws=None)
+        logger.info(self.bottom_user_name_widget.get() + " will sit down.")
+        self.player = ClientPlayer(self.bottom_user_name_widget.get(), pos=-1, ws=None)
         self.ui_msg_dispatcher()
         self.player.login(address=self.server_address_widget.get())
 
@@ -499,7 +486,7 @@ class Application(object):
         if self.player:
             self.player.hand_out(self.__center_pokers_list)
             logger.info(
-                "User [{}] hand out pokers {}".format(self.bottom_user_name_ctrl.get(), self.__center_pokers_list))
+                "User [{}] hand out pokers {}".format(self.bottom_user_name_widget.get(), self.__center_pokers_list))
             self.user_button_skip.config(state="disabled")
             self.user_button_handout.config(state="disabled")
 

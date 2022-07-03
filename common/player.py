@@ -99,7 +99,7 @@ class ClientPlayer(Player):
         self.__network_handler.join()
 
     def login(self, address):
-        # self.bottom_user_name_ctrl.config(state='disabled')
+        # self.bottom_user_name_widget.config(state='disabled')
         #  启动网络请求。
         self.__network_handler = NetworkHandler(self.get_player_name(), self.__recv_queue, address)
         self.__network_handler.start()
@@ -141,10 +141,9 @@ class ClientPlayer(Player):
 # listen_server(authentication & ROOM -- users, rules.)  >>
 # ServerPlayer(name, ws) (send_message, recv_message, heart_beat)
 class ServerPlayer(Player):
-    def __int__(self, name, pos, ws):
-        Player.__int__(self, name, pos, ws)
+    def __init__(self, name, pos, ws):
+        super().__init__(name, pos, ws)
         self.__room = None
-
         self.__send_out_queue = queue.Queue()
 
     def set_room(self, room):
@@ -210,6 +209,7 @@ class ServerPlayer(Player):
                                                                                 self.get_player_pos(),
                                                                                 self.get_player_status()))
                 # received take2 or no take.
+                # 有人抢红2 。
                 if self.get_player_status() == PlayerStatus.SingleOne.value:
                     self.__room.update_active_user_pos(self.get_player_pos())
                     for pos, new_player in enumerate(self.__room.users()):
@@ -222,10 +222,9 @@ class ServerPlayer(Player):
                     while self.get_owned_pokers().count(48) < 2:
                         self.received_added_red2()
                         # 通知 所有 用户 有人打独。TODO
-                        self.set_notify_message("在打独")
-
+                    self.set_notify_message("在打独")
                     logger.info("After take2 we get pokers {}".format(self.get_owned_pokers()))
-
+                # 不抢红2.
                 elif self.get_player_status() == PlayerStatus.NoTake.value:
                     notake_count = 0
                     for pos, new_player in enumerate(self.__room.users()):
@@ -237,7 +236,6 @@ class ServerPlayer(Player):
                     else:
                         for pos, new_player in enumerate(self.__room.users()):
                             if new_player.get_owned_pokers().count(48) == 2:
-                                self.__room.update_active_user_pos(pos)
                                 new_player.set_player_status(PlayerStatus.Share2)
                             else:
                                 new_player.set_player_status(PlayerStatus.Handout)
@@ -247,6 +245,7 @@ class ServerPlayer(Player):
                     face_pos = (self.get_player_pos() + 2) % 4
                     self.__room.users()[face_pos].received_added_red2()
                     self.set_player_status(PlayerStatus.Handout)
+                    self.set_notify_message("让出一个红2给对家")
                 elif self.get_player_status() == PlayerStatus.NoShare.value:
                     self.set_player_status(PlayerStatus.Handout)
                 elif self.get_player_status() == PlayerStatus.NoShare.value:
