@@ -59,15 +59,6 @@ class GameServer(object):
                     logger.info("User [ " + player_name + " ] restore session assigned room " + str(room_id))
                     return await self.__room_list[room_id].update_user_websocket(player_name, websocket)
             else:
-                msg = {
-                    "action": "network_issue",
-                    "position": -1,
-                    "pokers": "",
-                    "status": -1,
-                    "message": "Invalid user " + player_name
-                }
-
-                await websocket.send(json.dumps(msg))
                 return False
         except websockets.exceptions.ConnectionClosedError:
             logger.error("check_permit exception websockets.exceptions.ConnectionClosedError")
@@ -75,11 +66,15 @@ class GameServer(object):
         except websockets.exceptions.ConnectionClosedOK:
             logger.error("check_permit exception websockets.exceptions.ConnectionClosedOK")
             return False
+        except Exception as e:
+            logger.error("check_permit exception " + str(e))
+            return False
 
     # 服务器端主逻辑
     # websocket和path是该函数被回调时自动传过来的，不需要自己传
     async def main_logic(self, websocket, path):
         logger.info("received a new websocket {}".format(hash(websocket)))
+        # 在这个过程中已经建立好了后续的通信，这里可以继续接收其他的新接入用户
         if await self.check_permit(websocket):
             # new serverplayer.
             pass
@@ -89,13 +84,13 @@ class GameServer(object):
                 "position": -1,
                 "pokers": [],
                 "status": -1,
-                "message": "Server main_logic check_permit failed"
+                "message": "登陆失败了"
             }
             await websocket.send(json.dumps(msg))
 
     def run(self):
         # 把ip换成自己本地的ip
-        start_server = websockets.serve(self.main_logic, '127.0.0.1', 5678)
+        start_server = websockets.serve(self.main_logic, '0.0.0.0', 5678)
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
 
