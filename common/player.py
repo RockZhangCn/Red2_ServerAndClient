@@ -98,10 +98,10 @@ class ClientPlayer(Player):
         self.__network_handler.destroy()
         self.__network_handler.join()
 
-    def login(self):
+    def login(self, address):
         # self.bottom_user_name_ctrl.config(state='disabled')
         #  启动网络请求。
-        self.__network_handler = NetworkHandler(self.get_player_name(), self.__recv_queue)
+        self.__network_handler = NetworkHandler(self.get_player_name(), self.__recv_queue, address)
         self.__network_handler.start()
 
     def prepare_ready(self):

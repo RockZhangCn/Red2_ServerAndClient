@@ -463,7 +463,7 @@ class Application(object):
         logger.info(self.bottom_user_name_ctrl.get() + " will sit down.")
         self.player = ClientPlayer(self.bottom_user_name_ctrl.get(), pos=-1, ws=None)
         self.ui_msg_dispatcher()
-        self.player.login()
+        self.player.login(address=self.server_address_widget.get())
 
     def button_start(self):
         if self.player:
@@ -515,13 +515,13 @@ class Application(object):
     def button_share_2(self):
         if self.player:
             self.user_button_slient.config(state="disabled")
-            self.user_button_alone.config(state="disabled")
-            self.player.notake2()
+            self.user_button_share.config(state="disabled")
+            self.player.share_red2()
 
     def button_steal_chicken(self):
         if self.player:
             self.user_button_slient.config(state="disabled")
-            self.user_button_alone.config(state="disabled")
+            self.user_button_share.config(state="disabled")
             self.player.stolean()
 
     def button_hijack_2(self):

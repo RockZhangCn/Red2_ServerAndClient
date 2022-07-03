@@ -12,10 +12,12 @@ from server.room import RoomImpl
 class GameServer(object):
     VALID_USERS = ("nian", "wei", "long", "gao")
 
-    def __init__(self):
+    def __init__(self, address, port):
         self.__room_id_index = 0
         self.__room_list = []
         self.create_new_room()  # First room for use.
+        self.__server_address = address
+        self.__server_port = port
 
     def create_new_room(self):
         new_room = RoomImpl(self.__room_id_index)
@@ -90,12 +92,14 @@ class GameServer(object):
 
     def run(self):
         # 把ip换成自己本地的ip
-        start_server = websockets.serve(self.main_logic, '0.0.0.0', 5678)
+        start_server = websockets.serve(self.main_logic, self.__server_address, self.__server_port)
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
 
 
 if __name__ == "__main__":
-    logger.info("New Server is running....")
-    game_server = GameServer()
+    ipaddress = "0.0.0.0"
+    port = 5678
+    logger.info("New Server is running address {} port {}....".format(ipaddress, port))
+    game_server = GameServer(address=ipaddress, port=5678)
     game_server.run()

@@ -11,13 +11,14 @@ from log.log import logger
 
 
 class NetworkHandler(threading.Thread):
-    def __init__(self, user_id, recv_queue):
+    def __init__(self, user_id, recv_queue, server_address):
         threading.Thread.__init__(self)
         self.__event_loop = None
         self.__client_player_name = user_id
         self.running = True
         self.recv_queue = recv_queue
         self.send_queue = queue.Queue()
+        self.__server_address = server_address
 
     def destroy(self):
         self.running = False
@@ -85,7 +86,7 @@ class NetworkHandler(threading.Thread):
 
     async def main_logic(self):
         try:
-            async with websockets.connect('ws://127.0.0.1:5678') as ws:
+            async with websockets.connect(self.__server_address) as ws:
                 auth_result = await self.auth_system(ws)
                 logger.info("auth_system return {}".format(auth_result))
                 if auth_result:
