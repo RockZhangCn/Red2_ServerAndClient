@@ -1,2 +1,3 @@
-# FightTheLord2
-An AI for the Famous Chinese Poker Game Fight the Lord (斗地主)
+# 红2 （四人斗地主)
+Client[python tkinter]  < --- websocket ---> Server[python asyncio]
+UI Thread and Com Thread                      SingleThread

@@ -1,0 +1,228 @@
+import json
+import random
+from abc import abstractmethod, ABCMeta
+
+from common.card import Card
+from common.message import ServerMessage
+from common.player import ServerPlayer
+from common.player_status import PlayerStatus
+from log.log import logger
+
+
+class AbstractGameRoom(metaclass=ABCMeta):
+    @abstractmethod
+    def users(self):
+        pass
+
+    @abstractmethod
+    def room_id(self):
+        pass
+
+    @abstractmethod
+    def received_message(self, server_player, message):
+        pass
+
+    @abstractmethod
+    def valid_message(self, server_player, message):
+        pass
+
+    @abstractmethod
+    def assign_new_player(self, name, ws):
+        pass
+
+    @abstractmethod
+    def broadcast_message(self, message):
+        pass
+
+    @abstractmethod
+    def assign_initial_pokers(self):
+        pass
+
+    @abstractmethod
+    def clear_user(self, ws, reason):
+        pass
+
+
+class RoomImpl(AbstractGameRoom):
+    def __init__(self, id):
+        self.__game_started = False
+        self.__center_pokers_owner_pos = -1
+        self.__room_id = id
+        self.__room_players = []
+        self.__center_pokers = []  # string list, 0*3
+        self.__current_order_pos = random.randint(0, 3)
+
+    def reset_room_data(self):
+        self.__game_started = False
+        self.__center_pokers_owner_pos = -1
+        self.__room_id = id
+        self.__room_players = []
+        self.__center_pokers = []
+        logger.info("Room id {} is reset game data".format(self.__room_id))
+
+    def set_center_pokers(self, cards, owner_pos):
+        logger.info("Server set center user pos [ {} ] issued pokers {}".format(owner_pos, cards))
+        self.__center_pokers = cards
+        self.__center_pokers_owner_pos = owner_pos
+
+    def room_id(self):
+        return self.__room_id
+
+    def move_to_next_player(self):
+        self.__current_order_pos = (self.__current_order_pos + 1) % 4
+        if self.__room_players[self.__current_order_pos].get_player_status() == PlayerStatus.RunOut:
+            self.move_to_next_player()
+        logger.info("Server room move_to_next_player pos {}".format(self.__current_order_pos))
+
+    def is_room_full(self):
+        return len(self.users()) == 4
+
+    def users(self):
+        return self.__room_players
+
+    def is_user_logined(self, player_name):
+        for player in self.__room_players:
+            if player.get_player_name() == player_name:
+                if player.get_player_status() != PlayerStatus.Offline:
+                    logger.warning("User [{}] relogined due to incorrect status {}".format(player_name,
+                                                                                           player.get_player_status()))
+                return True
+
+        return False
+
+    def assign_initial_pokers(self):
+        all_cards = Card.all_cards
+        random.shuffle(all_cards)
+        logger.info("We begin to dispatcher_pokers start ")
+        assert (len(self.users()) == 4)
+        for pos, player in enumerate(self.users()):
+            # range step 4.
+            player_cards = [all_cards[x + pos] for x in range(0, len(all_cards), 4)]
+            player_cards.sort(reverse=True)
+            logger.info("Player [ {} ] at pos {} dispatched cards {}".format(player.get_player_name(),
+                                                                             pos, player_cards))
+            player.set_player_owned_pokers(player_cards)
+            player.set_has_red2(player_cards.count(48) > 0)
+
+    def received_message(self, server_player, message):
+        pass
+
+    def valid_message(self, ws, message):
+        pass
+
+    async def broadcast_message(self, message):
+        for player in self.users():
+            await player.send_msg(message)
+
+    # offline restore to online.
+    async def update_user_websocket(self, name, ws):
+        logger.warning("We update_user_websocket name [" + name + "]")
+        find_player = None
+        for player in self.users():
+            if player.get_player_name() == name and player.get_player_status() == PlayerStatus.Offline:
+                player.update_websocket(ws)
+                find_player = player
+                break
+
+        if find_player is None:
+            logger.error("update_user_websocket get None player")
+            return
+        # build seated message.
+        find_player.set_notify_message("重新上线了")
+        seated_msg = ServerMessage(find_player)
+        seated_msg.build_resp_status_message()
+        logger.info("Server broad_cast_message ---> " + str(seated_msg))
+        await self.broadcast_message(str(seated_msg))
+        # player setup heartbeat and send/recv.
+        await find_player.setup_message_loop()
+        return True
+
+    def update_active_user_pos(self, pos):
+        self.__current_order_pos = pos
+
+    async def broadcast_user_status(self, reply_player_pos):
+        started_user_count = 0
+        for pos, new_player in enumerate(self.__room_players):
+            if new_player.get_player_status() == PlayerStatus.Started:
+                started_user_count += 1
+
+        if started_user_count == 4:
+            self.assign_initial_pokers()
+            self.__game_started = True
+
+        # build status message.
+        user_status_info = []
+        for pos, new_player in enumerate(self.__room_players):
+            # 切换到出牌状态 。
+            if started_user_count == 4:
+                new_player.set_player_status(PlayerStatus.SingleOne)
+
+            if new_player.get_player_status() == PlayerStatus.Handout and len(new_player.get_owned_pokers()) == 0:
+                new_player.set_player_status(PlayerStatus.RunOut)
+
+            status_msg = ServerMessage(new_player)
+            status_msg.build_resp_status_message()
+            user_status_info.append(status_msg.to_dict())
+
+        actual_order_pos = -1
+        if self.__game_started:
+            actual_order_pos = self.__current_order_pos
+
+        game_status_data = {"action": "status_broadcast",
+                            "notify_pos": reply_player_pos,  # 回用户复用户的ui消息
+                            "active_pos": actual_order_pos,  # current player handout. or do decision.
+                            "center_poker_issuer": self.__center_pokers_owner_pos,  # center pokers handed by who ?
+                            "center_pokers": self.__center_pokers,
+                            "status_all": user_status_info}
+
+        s = json.dumps(game_status_data)
+        logger.info("Server broad_cast_user_status {} users ---> {}".format(len(self.users()), s))
+        await self.broadcast_message(s)
+
+    async def assign_new_player(self, name, ws):
+        new_player = ServerPlayer(name, pos=-1, ws=ws)
+        if len(self.users()) > 3:
+            new_player.set_notify_message("Single room is full")
+            sms = ServerMessage(new_player)
+            sms.build_resp_status_message()
+            await ws.send(str(sms))
+            logger.fatal("Single room is full, can't seat new user " + name)
+            return False
+
+        new_player.set_room(self)
+        self.__room_players.append(new_player)
+        pos = self.__room_players.index(new_player)
+        new_player.set_player_pos(pos)
+
+        # build status message.
+        await self.broadcast_user_status(pos)
+        await new_player.setup_message_loop()
+
+        return True
+
+    async def clear_user(self, ws, reason):
+        pos = -1
+
+        for idx, user in enumerate(self.__room_players):
+            if user.get_websocket() == ws:
+                pos = idx
+
+                # The game is in progress, exit will be marked as offline.
+                if user.get_player_status() in (
+                        PlayerStatus.Started, PlayerStatus.SingleOne, PlayerStatus.Share2, PlayerStatus.Handout) and \
+                        self.__game_started:
+                    user.set_player_status(PlayerStatus.Offline)
+                    logger.info("We set user [{}] in Offline status ".format(user.get_player_name()))
+
+                    if len(self.__room_players) == 0:
+                        self.reset_room_data()
+                    return
+
+        if -1 != pos:
+            logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, len(self.users()), reason))
+            clear_name = self.__room_players[pos].get_player_name()
+            self.__room_players.pop(pos)
+            logger.info("we clear user [ {} ] left {} users".format(clear_name, len(self.__room_players)))
+
+            if len(self.__room_players) == 0:
+                self.reset_room_data()
