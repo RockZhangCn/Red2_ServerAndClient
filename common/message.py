@@ -88,12 +88,8 @@ class ServerMessage(Message):
         self.current_msg["action"] = "resp_status"
         self.current_msg["position"] = self.__server_player.get_player_pos()
         self.current_msg["pokers"] = self.__server_player.get_owned_pokers()
-        self.current_msg["pokernum"] = len(self.current_msg["pokers"])
         self.current_msg["status"] = self.__server_player.get_player_status().value
         self.current_msg['message'] = self.__server_player.get_notify_message()
-
-    def set_notify_message(self, content):
-        self.__notify_message = content
 
     def to_dict(self):
         return self.current_msg

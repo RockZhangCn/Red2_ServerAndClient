@@ -63,7 +63,6 @@ class GameServer(object):
                     "action": "network_issue",
                     "position": -1,
                     "pokers": "",
-                    "pokernum": 0,
                     "status": -1,
                     "message": "Invalid user " + player_name
                 }
@@ -88,8 +87,7 @@ class GameServer(object):
             msg = {
                 "action": "network_issue",
                 "position": -1,
-                "pokers": "",
-                "pokernum": 0,
+                "pokers": [],
                 "status": -1,
                 "message": "Server main_logic check_permit failed"
             }

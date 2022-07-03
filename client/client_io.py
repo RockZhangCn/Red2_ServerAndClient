@@ -101,7 +101,6 @@ class NetworkHandler(threading.Thread):
                 "action": "network_issue",
                 "position": -1,
                 "pokers": "",
-                "pokernum": 0,
                 "status": -1,
                 "message": str(e)
             }
