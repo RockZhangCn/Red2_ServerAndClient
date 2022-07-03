@@ -51,6 +51,7 @@ class RoomImpl(AbstractGameRoom):
         self.__room_players = []
         self.__center_pokers = []  # string list, 0*3
         self.__current_order_pos = random.randint(0, 3)
+        self.__last_restore_broadcast_message = None
 
     def reset_room_data(self):
         self.__game_started = False
@@ -121,6 +122,8 @@ class RoomImpl(AbstractGameRoom):
         for player in self.users():
             if player.get_player_name() == name and player.get_player_status() == PlayerStatus.Offline:
                 player.update_websocket(ws)
+                # 恢复成在线模式。TODO 正确的模式。
+                player.set_player_status(PlayerStatus.Handout)
                 find_player = player
                 break
 
@@ -129,10 +132,15 @@ class RoomImpl(AbstractGameRoom):
             return
         # build seated message.
         find_player.set_notify_message("重新上线了")
-        seated_msg = ServerMessage(find_player)
-        seated_msg.build_resp_status_message()
-        logger.info("Server broad_cast_message ---> " + str(seated_msg))
-        await self.broadcast_message(str(seated_msg))
+        # send restore message.
+        logger.info("User {} restore online to broadcast".format(find_player.get_player_name()))
+        # extract status, and synchroniz ws. TODO.
+        await self.broadcast_restore_message()
+        # seated_msg = ServerMessage(find_player)
+        # seated_msg.build_resp_status_message()
+        # logger.info("Server broad_cast_message ---> " + str(seated_msg))
+        # await self.broadcast_message(str(seated_msg))
+
         # player setup heartbeat and send/recv.
         await find_player.setup_message_loop()
         return True
@@ -174,10 +182,16 @@ class RoomImpl(AbstractGameRoom):
                             "center_poker_issuer": self.__center_pokers_owner_pos,  # center pokers handed by who ?
                             "center_pokers": self.__center_pokers,
                             "status_all": user_status_info}
-
+        self.__last_restore_broadcast_message = game_status_data
         s = json.dumps(game_status_data)
         logger.info("Server broad_cast_user_status {} users ---> {}".format(len(self.users()), s))
         await self.broadcast_message(s)
+
+    async def broadcast_restore_message(self):
+        if self.__last_restore_broadcast_message:
+            s = json.dumps(self.__last_restore_broadcast_message)
+            logger.info("Server broad_cast_user_status {} users ---> {}".format(len(self.users()), s))
+            await self.broadcast_message(s)
 
     async def assign_new_player(self, name, ws):
         new_player = ServerPlayer(name, pos=-1, ws=ws)

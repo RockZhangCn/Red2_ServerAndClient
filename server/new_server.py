@@ -56,7 +56,7 @@ class GameServer(object):
                     return await self.__room_list[room_id].assign_new_player(player_name, websocket)
                 else:
                     # network restore,
-                    logger.debug("User [ " + player_name + " ] restore session assigned room " + str(room_id))
+                    logger.info("User [ " + player_name + " ] restore session assigned room " + str(room_id))
                     return await self.__room_list[room_id].update_user_websocket(player_name, websocket)
             else:
                 msg = {
