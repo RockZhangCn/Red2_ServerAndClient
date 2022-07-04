@@ -1,0 +1,8 @@
+# 添加wss的自定义证书支持。
+https://www.yiibai.com/websocket/python-websockets-library.html
+
+# 断线恢复。
+
+# 结局判断
+
+# Android客户端

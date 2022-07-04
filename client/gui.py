@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
+import os
+import sys
 import tkinter as tk  # 使用Tkinter前需要先导入
 import tkinter.messagebox
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from PIL import Image, ImageTk
 from PIL.ImageTk import PhotoImage
@@ -27,19 +32,19 @@ class Application(object):
         self.__poker_id = []
 
         self.timer_show = ImageTk.PhotoImage(
-            Image.open(f"image/timer.png").resize((80, 105), Image.ANTIALIAS))
+            Image.open(SCRIPT_DIR + f"/image/timer.png").resize((80, 105), Image.ANTIALIAS))
 
         # background pokers.
         self.image_background = ImageTk.PhotoImage(
-            Image.open(f"image/green_back.png").resize((120, 180), Image.ANTIALIAS))
+            Image.open(SCRIPT_DIR + f"/image/green_back.png").resize((120, 180), Image.ANTIALIAS))
 
         # poker index.
         self.images = []
         for i in range(54):
             self.images.append(
                 ImageTk.PhotoImage(
-                    Image.open(f"image/{i}.png").resize((120, 180),
-                                                        Image.ANTIALIAS))
+                    Image.open(SCRIPT_DIR + f"/image/{i}.png").resize((120, 180),
+                                                                      Image.ANTIALIAS))
             )
 
         root = window
@@ -56,7 +61,8 @@ class Application(object):
 
         self.top_message_value = tk.StringVar()
         self.top_message_value.set("null")
-        top_info_label = tk.Label(self.top_user_panel, bg="#FFFFE0", textvariable=self.top_message_value, font=("黑体", 16))
+        top_info_label = tk.Label(self.top_user_panel, bg="#FFFFE0", textvariable=self.top_message_value,
+                                  font=("黑体", 16))
         top_info_label.pack(side="top", fill="x")
 
         # self.poker_canvas
@@ -124,7 +130,8 @@ class Application(object):
 
         self.bottom_user_name_value = tk.StringVar()
         self.bottom_user_name_value.set("")
-        self.bottom_user_name_widget = tk.Entry(self.bottom_info, textvariable=self.bottom_user_name_value, font=('Arial', 18),
+        self.bottom_user_name_widget = tk.Entry(self.bottom_info, textvariable=self.bottom_user_name_value,
+                                                font=('Arial', 18),
                                                 width=10)  # 显示成明文形式
         self.bottom_user_name_widget.insert(tk.END, 'nian')
         self.bottom_user_name_widget.pack(side="left", padx=20)
@@ -529,10 +536,8 @@ if __name__ == "__main__":
     window = tk.Tk()
     window.title('红二')
 
-    icon = PhotoImage(file='image/icon.png')
+    icon = PhotoImage(file=SCRIPT_DIR + '/image/icon.png')
     window.geometry('1400x1080')  # 这里的乘是小x
     window.tk.call('wm', 'iconphoto', window._w, icon)
     app = Application(window)
     window.mainloop()
-
-

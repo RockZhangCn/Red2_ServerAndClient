@@ -1,7 +1,14 @@
+#!/usr/bin/env python
+
 import asyncio
 import json
+import os
+import sys
 
 import websockets
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from common.message import Message
 from log.log import logger

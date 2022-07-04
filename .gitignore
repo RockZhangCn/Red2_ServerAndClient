@@ -4,3 +4,4 @@ __pycache__
 wifi_analyze
 nohup.out
 *.orig
+*.bash
