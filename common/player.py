@@ -45,6 +45,9 @@ class Player(object):
     def set_player_pos(self, pos):
         self.__pos = pos
 
+    def set_websocket(self, ws):
+        self.__ws = ws
+
     def get_websocket(self):
         return self.__ws
 
@@ -158,9 +161,6 @@ class ServerPlayer(Player):
         await task2
         # await task3
 
-    def update_websocket(self, websocket):
-        self.__ws = websocket
-
     async def heartbeat(self):
         while True:
             try:
@@ -231,9 +231,10 @@ class ServerPlayer(Player):
                         if new_player.get_player_status() == PlayerStatus.NoTake.value:
                             notake_count += 1
 
-                    if notake_count < 4:
-                        self.__room.move_to_next_player()
-                    else:
+                    # always move to next user.
+                    self.__room.move_to_next_player()
+
+                    if notake_count == 4:
                         for pos, new_player in enumerate(self.__room.users()):
                             if new_player.get_owned_pokers().count(48) == 2:
                                 new_player.set_player_status(PlayerStatus.Share2)
@@ -244,24 +245,24 @@ class ServerPlayer(Player):
                     self.hand_out_cards([48])
                     face_pos = (self.get_player_pos() + 2) % 4
                     self.__room.users()[face_pos].received_added_red2()
+                    self.__room.users()[face_pos].set_notify_message("从对家接收一个红2")
                     self.set_player_status(PlayerStatus.Handout)
                     self.set_notify_message("让出一个红2给对家")
                 elif self.get_player_status() == PlayerStatus.NoShare.value:
                     self.set_player_status(PlayerStatus.Handout)
-                elif self.get_player_status() == PlayerStatus.NoShare.value:
-                    for pos, new_player in enumerate(self.__room.users()):
-                        new_player.set_player_status(PlayerStatus.Handout)
-
                 elif self.get_player_status() == PlayerStatus.Handout.value:
                     logger.info("We switched to Handout state")
                     hand_out_cards = msg["handout_pokers"]
                     issued_pokers = copy.deepcopy(hand_out_cards)
+                    self.__room.move_to_next_player()
                     if len(hand_out_cards) > 0:
                         self.hand_out_cards(hand_out_cards)
                         self.__room.set_center_pokers(issued_pokers, self.get_player_pos())
-                        self.__room.move_to_next_player()
-                    else:
-                        self.__room.move_to_next_player()
+                elif self.get_player_status() == PlayerStatus.RunOut.value:
+                    logger.info("We received user {} run out".format(self.get_player_name()))
+                    # TODO should we move to next player ?
+                    pass
+
 
                 # room broad case all this user started.
                 # broadcast user status.

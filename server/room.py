@@ -51,6 +51,7 @@ class RoomImpl(AbstractGameRoom):
         self.__room_players = []
         self.__center_pokers = []  # string list, 0*3
         self.__current_order_pos = random.randint(0, 3)
+        logger.info("Room handout order get current order pos " + str(self.__current_order_pos))
         self.__last_restore_broadcast_message = None
 
     def reset_room_data(self):
@@ -115,15 +116,23 @@ class RoomImpl(AbstractGameRoom):
         for player in self.users():
             await player.send_msg(message)
 
+    def get_user_status_from_restore_message(self, name):
+        if self.__last_restore_broadcast_message:
+            for player in self.__last_restore_broadcast_message["status_all"]:
+                if player["player_name"] == name:
+                    return PlayerStatus(player["status"])
+
+        return PlayerStatus.Handout
+
     # offline restore to online.
     async def update_user_websocket(self, name, ws):
         logger.warning("We update_user_websocket name [" + name + "]")
         find_player = None
         for player in self.users():
             if player.get_player_name() == name and player.get_player_status() == PlayerStatus.Offline:
-                player.update_websocket(ws)
-                # 恢复成在线模式。TODO 正确的模式。
-                player.set_player_status(PlayerStatus.Handout)
+                player.set_websocket(ws)
+                status = self.get_user_status_from_restore_message(name)
+                player.set_player_status(status)
                 find_player = player
                 break
 

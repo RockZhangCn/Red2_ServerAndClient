@@ -261,8 +261,8 @@ class Application(object):
                 if len(msg["center_pokers"]) > 0:
                     self.__center_pokers_list = msg["center_pokers"]
                     self.show_center_pokers()
-
                     logger.info("Server draw the center pokers {}".format(msg["center_pokers"]))
+
                 for seat_player in msg['status_all']:
                     logger.info("user {} seated at pos {} get new status {}".format(seat_player['player_name'],
                                                                                     seat_player['position'],
@@ -363,26 +363,29 @@ class Application(object):
                             self.show_bottom_message(notify_message)
                             self.user_button_start.config(state="disabled")
 
+                            if player_status == PlayerStatus.Share2.value:
+                                self.user_button_share.config(state="active")
+                                self.user_button_slient.config(state="active")
+
                             if msg['active_pos'] == self.we_seat_pos:
                                 self.show_bottom_timer()
                                 if player_status == PlayerStatus.SingleOne.value:
                                     # enable single one button
                                     self.user_button_alone.config(state="active")
                                     self.user_button_notake.config(state="active")
-                                elif player_status == PlayerStatus.Share2.value:
-                                    self.user_button_share.config(state="active")
-                                    self.user_button_slient.config(state="active")
-
                                 elif player_status == PlayerStatus.Handout.value:
                                     self.user_button_handout.config(state="active")
-                                    # 这不是我们出的中间牌或没有人出过中间牌。
-                                    if msg['center_poker_issuer'] == -1 or msg[
-                                        'center_poker_issuer'] != self.we_seat_pos:
-                                        self.user_button_skip.config(state="active")
-                                    else:
+                                    # 不是我们出的或没人出过牌，禁用过牌
+                                    if msg['center_poker_issuer'] != self.we_seat_pos:
                                         self.user_button_skip.config(state="disabled")
+                                    else:
+                                        self.user_button_skip.config(state="active")
                         else:
-                            logger.fatal("We have got a incorrect position.")
+                            # TODO why wrong?
+                            logger.fatal("We have got a incorrect position {}".format(self.we_seat_pos))
+                            logger.fatal("user {} seated at pos {} get new status {}".format(seat_player['player_name'],
+                                                                                            seat_player['position'],
+                                                                                            seat_player['status']))
 
                     elif player_status == PlayerStatus.RunOut:
                         if seat_pos == (self.we_seat_pos + 1) % 4:
