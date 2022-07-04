@@ -129,7 +129,7 @@ class RoomImpl(AbstractGameRoom):
 
         if find_player is None:
             logger.error("update_user_websocket get None player")
-            return
+            return False, "Server:user has logined, don't login twice."
         # build seated message.
         find_player.set_notify_message("重新上线了")
         # send restore message.
@@ -143,7 +143,7 @@ class RoomImpl(AbstractGameRoom):
 
         # player setup heartbeat and send/recv.
         await find_player.setup_message_loop()
-        return True
+        return True, "Success relogin."
 
     def update_active_user_pos(self, pos):
         self.__current_order_pos = pos
@@ -196,12 +196,7 @@ class RoomImpl(AbstractGameRoom):
     async def assign_new_player(self, name, ws):
         new_player = ServerPlayer(name, pos=-1, ws=ws)
         if len(self.users()) > 3:
-            new_player.set_notify_message("Single room is full")
-            sms = ServerMessage(new_player)
-            sms.build_resp_status_message()
-            await ws.send(str(sms))
-            logger.fatal("Single room is full, can't seat new user " + name)
-            return False
+            return False, "Server:Single room is full, can't seat new user"
 
         new_player.set_room(self)
         self.__room_players.append(new_player)
@@ -212,7 +207,7 @@ class RoomImpl(AbstractGameRoom):
         await self.broadcast_user_status(pos)
         await new_player.setup_message_loop()
 
-        return True
+        return True, "Success"
 
     async def clear_user(self, ws, reason):
         pos = -1

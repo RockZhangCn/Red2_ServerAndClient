@@ -36,15 +36,34 @@ class NetworkHandler(threading.Thread):
             response_str = await websocket.recv()
             logger.info("Client auth_system received string " + response_str)
             msg = json.loads(response_str)
+
+            action = msg['action']
             self.recv_queue.put(msg)
 
-            if 'network_issue' == msg['action']:
+            if 'network_issue' == action:
                 return False
             else:
                 return True
         except websockets.exceptions.ConnectionClosedError:
-            logger.info("Client auth_system websockets.exceptions.ConnectionClosedError")
-            self.recv_queue.put({"action": "login", "extra_data": "connect to server failed"})
+            logger.error("Client auth_system websockets.exceptions.ConnectionClosedError")
+            msg = {
+                "action": "network_issue",
+                "position": -1,
+                "pokers": [],
+                "status": -1,
+                "message": "Client: auth_system websockets.exceptions.ConnectionClosedError"
+            }
+            self.recv_queue.put(msg)
+        except Exception as e:
+            logger.error("Client auth_system Exception " + str(e))
+            msg = {
+                "action": "network_issue",
+                "position": -1,
+                "pokers": [],
+                "status": -1,
+                "message": "Client: auth_system Exception " + str(e)
+            }
+            self.recv_queue.put(msg)
             return False
 
     async def dispatcher(self, ws):

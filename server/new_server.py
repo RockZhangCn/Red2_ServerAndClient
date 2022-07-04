@@ -68,23 +68,24 @@ class GameServer(object):
                     logger.info("User [ " + player_name + " ] restore session assigned room " + str(room_id))
                     return await self.__room_list[room_id].update_user_websocket(player_name, websocket)
             else:
-                return False
+                return False, "Server: invalid user!"
         except websockets.exceptions.ConnectionClosedError:
-            logger.error("check_permit exception websockets.exceptions.ConnectionClosedError")
-            return False
+            logger.error("Server check_permit exception websockets.exceptions.ConnectionClosedError")
+            return False, "Server check_permit exception websockets.exceptions.ConnectionClosedError"
         except websockets.exceptions.ConnectionClosedOK:
             logger.error("check_permit exception websockets.exceptions.ConnectionClosedOK")
-            return False
+            return False, "Server check_permit exception websockets.exceptions.ConnectionClosedOK"
         except Exception as e:
             logger.error("check_permit exception " + str(e))
-            return False
+            return False, "Server check_permit exception " + str(e)
 
     # 服务器端主逻辑
     # websocket和path是该函数被回调时自动传过来的，不需要自己传
     async def main_logic(self, websocket, path):
         logger.info("received a new websocket {}".format(hash(websocket)))
         # 在这个过程中已经建立好了后续的通信，这里可以继续接收其他的新接入用户
-        if await self.check_permit(websocket):
+        result, message = await self.check_permit(websocket)
+        if result:
             # new serverplayer.
             pass
         else:
@@ -93,7 +94,7 @@ class GameServer(object):
                 "position": -1,
                 "pokers": [],
                 "status": -1,
-                "message": "登陆失败了"
+                "message": message
             }
             await websocket.send(json.dumps(msg))
 
