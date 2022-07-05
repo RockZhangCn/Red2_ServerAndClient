@@ -283,9 +283,11 @@ class Application(object):
                             self.user_button_login.config(state="disabled")
                             self.user_button_start.config(state="active")
 
-                # restore postion.
+                # restore position.
                 if self.we_seat_pos == -1:
                     self.we_seat_pos = msg['recover_pos']
+                    self.bottom_user_name_widget.config(state="disabled")
+                    self.user_button_login.config(state="disabled")
 
                 self.clear_all_pokers()
 

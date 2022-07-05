@@ -143,7 +143,6 @@ class RoomImpl(AbstractGameRoom):
         self.__last_restore_broadcast_message['recover_pos'] = find_player.get_player_pos()
         # send restore message.
         logger.info("User {} restore online to broadcast".format(find_player.get_player_name()))
-        # extract status, and synchroniz ws. TODO.
         await self.broadcast_restore_message()
         # seated_msg = ServerMessage(find_player)
         # seated_msg.build_resp_status_message()
@@ -190,6 +189,7 @@ class RoomImpl(AbstractGameRoom):
                             "active_pos": actual_order_pos,  # current player handout. or do decision.
                             "center_poker_issuer": self.__center_pokers_owner_pos,  # center pokers handed by who ?
                             "center_pokers": self.__center_pokers,
+                            "recover_pos": -1,
                             "status_all": user_status_info}
         self.__last_restore_broadcast_message = game_status_data
         s = json.dumps(game_status_data)
