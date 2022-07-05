@@ -57,7 +57,6 @@ class RoomImpl(AbstractGameRoom):
     def reset_room_data(self):
         self.__game_started = False
         self.__center_pokers_owner_pos = -1
-        self.__room_id = id
         self.__room_players = []
         self.__center_pokers = []
         logger.info("Room id {} is reset game data".format(self.__room_id))

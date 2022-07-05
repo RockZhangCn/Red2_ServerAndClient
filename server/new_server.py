@@ -60,7 +60,7 @@ class GameServer(object):
                 # logger.debug("User [ " + player_name + " ] logined assigned room " + str(room_id))
                 if room_id == -1:
                     room_id = self.assign_room_id(player_name)
-                    logger.debug("User [ " + player_name + " ] new login assigned room " + str(room_id))
+                    logger.info("User [ " + player_name + " ] new login assigned room " + str(room_id))
                     # new login ,assign fixed room and position.
                     return await self.__room_list[room_id].assign_new_player(player_name, websocket)
                 else:
