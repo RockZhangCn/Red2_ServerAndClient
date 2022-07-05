@@ -257,12 +257,13 @@ class Application(object):
                 tkinter.messagebox.showerror(title='登录失败', message=msg['message'])
                 self.show_bottom_message(msg['message'])
             elif msg['action'] == "status_broadcast":
-                self.clear_all_pokers()
+
                 if len(msg["center_pokers"]) > 0:
                     self.__center_pokers_list = msg["center_pokers"]
                     self.show_center_pokers()
                     logger.info("Server draw the center pokers {}".format(msg["center_pokers"]))
 
+                # login handler
                 for seat_player in msg['status_all']:
                     logger.info("user {} seated at pos {} get new status {}".format(seat_player['player_name'],
                                                                                     seat_player['position'],
@@ -282,6 +283,13 @@ class Application(object):
                             self.user_button_login.config(state="disabled")
                             self.user_button_start.config(state="active")
 
+                # restore postion.
+                if self.we_seat_pos == -1:
+                    self.we_seat_pos = msg['recover_pos']
+
+                self.clear_all_pokers()
+
+                # set active user
                 if msg["active_pos"] == (self.we_seat_pos + 1) % 4:
                     self.show_right_timer()
                 elif msg["active_pos"] == (self.we_seat_pos + 2) % 4:
@@ -346,20 +354,24 @@ class Application(object):
                         if seat_pos == (self.we_seat_pos + 1) % 4:
                             self.show_right_pokers([3] * cards_count)
                             self.show_right_message(notify_message)
+                            self.right_user_name_value.set(player_name)
                         # face
                         elif seat_pos == (self.we_seat_pos + 2) % 4:
                             # 只显示 10 张表示有很多。
                             self.show_top_pokers([3] * cards_count)
                             self.show_top_message(notify_message)
+                            self.top_user_name_value.set(player_name)
                         # left.
                         elif seat_pos == (self.we_seat_pos + 3) % 4:
                             self.show_left_pokers([3] * cards_count)
                             self.show_left_message(notify_message)
+                            self.left_user_name_value.set(player_name)
                         elif seat_pos == self.we_seat_pos:
                             self.__poker_lists = cards
                             # User save the poker lists.
                             self.player.set_player_owned_pokers(self.__poker_lists)
                             self.show_bottom_pokers()
+                            self.bottom_user_name_value.set(player_name)
                             self.show_bottom_message(notify_message)
                             self.user_button_start.config(state="disabled")
 
