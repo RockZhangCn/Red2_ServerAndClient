@@ -23,6 +23,7 @@ class Card(object):
         else:
             return 0
 
+
 class CardHand(object):
     MODE_SINGLE = 1 # "single"
     MODE_PAIR = 2 #"pair"
@@ -40,7 +41,7 @@ class CardHand(object):
     MODE_INVALID = -1 #"invalid"
 
     @staticmethod
-    def value(self, cards):
+    def value(cards):
         cards.sort(reverse=True)
 
         value_set = set()

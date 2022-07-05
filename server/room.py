@@ -137,18 +137,13 @@ class RoomImpl(AbstractGameRoom):
 
         if find_player is None:
             logger.error("update_user_websocket get None player")
-            return False, "Server:user has logined, don't login twice."
+            return False, "Server:user has logged in, don't login twice."
         # build seated message.
         find_player.set_notify_message("重新上线了")
         self.__last_restore_broadcast_message['recover_pos'] = find_player.get_player_pos()
         # send restore message.
         logger.info("User {} restore online to broadcast".format(find_player.get_player_name()))
         await self.broadcast_restore_message()
-        # seated_msg = ServerMessage(find_player)
-        # seated_msg.build_resp_status_message()
-        # logger.info("Server broad_cast_message ---> " + str(seated_msg))
-        # await self.broadcast_message(str(seated_msg))
-
         # player setup heartbeat and send/recv.
         await find_player.setup_message_loop()
         return True, "Success relogin."

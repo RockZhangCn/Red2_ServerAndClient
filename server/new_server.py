@@ -55,7 +55,7 @@ class GameServer(object):
             message = Message.from_string(recv_str)
             player_name = message.get_player_name()
 
-            if player_name in GameServer.VALID_USERS:
+            if True or player_name in GameServer.VALID_USERS:
                 room_id = self.get_room_id_by_player_name(player_name)
                 # logger.debug("User [ " + player_name + " ] logined assigned room " + str(room_id))
                 if room_id == -1:

@@ -5,6 +5,8 @@ import sys
 import tkinter as tk  # 使用Tkinter前需要先导入
 import tkinter.messagebox
 
+from common.card import CardHand
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
@@ -288,6 +290,8 @@ class Application(object):
                     self.we_seat_pos = msg['recover_pos']
                     self.bottom_user_name_widget.config(state="disabled")
                     self.user_button_login.config(state="disabled")
+                    self.__selected_poker_list.clear()
+                    self.__poker_id.clear()
 
                 self.clear_all_pokers()
 
