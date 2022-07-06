@@ -5,8 +5,6 @@ import sys
 import tkinter as tk  # 使用Tkinter前需要先导入
 import tkinter.messagebox
 
-from common.card import CardHand
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
@@ -18,6 +16,35 @@ from common.player_status import PlayerStatus
 from log.log import logger
 
 
+class UserUIPanel(object):
+    def __init__(self, name_widget, message_widget, show_timer, show_pokers):
+        self.name_widget = name_widget
+        self.message_widget = message_widget
+        self.timer_func = show_timer
+        self.poker_func = show_pokers
+
+    def __set_name(self, value):
+        self.name_widget.set(value)
+
+    name = property(fset=__set_name)
+
+    def __set_message(self, value):
+        self.message_widget.set(value)
+
+    message = property(fset=__set_message)
+
+    def __show_timer(self, show):
+        if show:
+            self.timer_func()
+
+    timer = property(fset=__show_timer)
+
+    def __show_pokers(self, cards):
+        self.poker_func(cards)
+
+    pokers = property(fset=__show_pokers)
+
+
 class Application(object):
     def __init__(self, window):
         self.__window = window
@@ -25,13 +52,13 @@ class Application(object):
         self.__window.protocol("WM_DELETE_WINDOW", self.close_all)
 
         self.__center_pokers_list = []
-        self.next_pos = 0
+        self.__selected_poker_list = list()
+        self.__owned_poker_list = []
+        self.bottom_canvas_draw_next_pos = 0
         self.we_seat_pos = -1
         self.player = None
-        self.__selected_poker_list = list()
-        self.__poker_lists = []
-        # canvas draw unit id list.
-        self.__poker_id = []
+
+        self.__user_ui_panel = [None, None, None, None]
 
         self.timer_show = ImageTk.PhotoImage(
             Image.open(SCRIPT_DIR + f"/image/timer.png").resize((80, 105), Image.ANTIALIAS))
@@ -71,6 +98,8 @@ class Application(object):
         self.top_poker_canvas = tk.Canvas(self.top_user_panel, width=self.width, height=220)
         self.top_poker_canvas.pack(side="top", anchor="center")
 
+        self.__user_ui_panel[2] = UserUIPanel(self.top_user_name_value, self.top_message_value, self.show_top_timer,
+                                              self.show_top_pokers)
         # 　中部　　　又纵分了　左　中　右　三大部分。
         main_panel = tk.Frame(root)
         main_panel.pack(side="top", padx=1, pady=1, fill="both", expand=True)
@@ -150,6 +179,10 @@ class Application(object):
                               justify="left")
         label_info.pack(side="left", expand=True, fill="x")
 
+        self.__user_ui_panel[0] = UserUIPanel(self.bottom_user_name_value, self.bottom_message_value,
+                                              self.show_bottom_timer,
+                                              self.show_bottom_pokers)
+
         # left panel
         self.left_user_panel = tk.Frame(main_panel)
         self.left_user_panel.pack(side="left", fill="y", anchor="w")
@@ -168,6 +201,10 @@ class Application(object):
         # self.poker_canvas
         self.left_poker_canvas = tk.Canvas(self.left_user_panel, width=300)
         self.left_poker_canvas.pack(side="top", fill="y", anchor="center", expand=True)
+
+        self.__user_ui_panel[3] = UserUIPanel(self.left_user_name_value, self.left_message_value,
+                                              self.show_left_timer,
+                                              self.show_left_pokers)
 
         # middle panel
         self.center_panel = tk.Frame(main_panel, bd=4, relief='groove', bg="#F0FFF0")
@@ -195,6 +232,10 @@ class Application(object):
         self.right_poker_canvas = tk.Canvas(self.right_user_panel, width=300)
         self.right_poker_canvas.pack(side="top", fill="y", anchor="center", expand=True)
 
+        self.__user_ui_panel[1] = UserUIPanel(self.right_user_name_value, self.right_message_value,
+                                              self.show_right_timer,
+                                              self.show_right_pokers)
+
         self.disable_buttons()
 
     def disable_buttons(self):
@@ -212,25 +253,23 @@ class Application(object):
         if self.player:
             self.player.destroy()
 
-    def show_bottom_pokers(self):
+    def show_bottom_pokers(self, cards):
         # clear all.
         self.bottom_poker_canvas.delete("all")
         self.__selected_poker_list.clear()
-        self.__poker_id.clear()
 
-        self.next_pos = 0
-        cards = self.__poker_lists
+        self.bottom_canvas_draw_next_pos = 0
+        self.__owned_poker_list = cards
         for idx, card in enumerate(cards):
             x = self.width // 5 + idx * 30
             y = 110  #
-            image_id = self.bottom_poker_canvas.create_image(x, y, anchor='e', tags=("zhang",), image=self.images[card])
-            self.__poker_id.append(image_id)
+            image_id = self.bottom_poker_canvas.create_image(x, y, anchor='e', tags=(card,), image=self.images[card])
             self.bottom_poker_canvas.tag_bind(image_id, '<ButtonRelease-1>', self.poker_click_callback)
-            self.next_pos = x + 120
-        logger.debug("Current ID list {}".format(self.__poker_id))
-        logger.debug("Current Poker value list {}".format(self.__poker_lists))
+            self.bottom_canvas_draw_next_pos = x + 120
 
-    def clear_all_pokers(self):
+        logger.info("Current Poker value list {}".format(self.__owned_poker_list))
+
+    def clear_all_canvas(self):
         self.left_poker_canvas.delete("all")
         self.top_poker_canvas.delete("all")
         self.right_poker_canvas.delete("all")
@@ -291,9 +330,8 @@ class Application(object):
                     self.bottom_user_name_widget.config(state="disabled")
                     self.user_button_login.config(state="disabled")
                     self.__selected_poker_list.clear()
-                    self.__poker_id.clear()
 
-                self.clear_all_pokers()
+                self.clear_all_canvas()
 
                 # set active user
                 if msg["active_pos"] == (self.we_seat_pos + 1) % 4:
@@ -373,10 +411,9 @@ class Application(object):
                             self.show_left_message(notify_message)
                             self.left_user_name_value.set(player_name)
                         elif seat_pos == self.we_seat_pos:
-                            self.__poker_lists = cards
                             # User save the poker lists.
-                            self.player.set_player_owned_pokers(self.__poker_lists)
-                            self.show_bottom_pokers()
+                            self.player.set_player_owned_pokers(cards)
+                            self.show_bottom_pokers(cards)
                             self.bottom_user_name_value.set(player_name)
                             self.show_bottom_message(notify_message)
                             self.user_button_start.config(state="disabled")
@@ -402,8 +439,8 @@ class Application(object):
                             # TODO why wrong?
                             logger.fatal("We have got a incorrect position {}".format(self.we_seat_pos))
                             logger.fatal("user {} seated at pos {} get new status {}".format(seat_player['player_name'],
-                                                                                            seat_player['position'],
-                                                                                            seat_player['status']))
+                                                                                             seat_player['position'],
+                                                                                             seat_player['status']))
 
                     elif player_status == PlayerStatus.RunOut:
                         if seat_pos == (self.we_seat_pos + 1) % 4:
@@ -422,7 +459,7 @@ class Application(object):
     ''''''''''''''''''''''''''''''''''''''''''''''''
 
     def show_bottom_timer(self):
-        self.bottom_poker_canvas.create_image(self.next_pos, 110, anchor='e', image=self.timer_show)
+        self.bottom_poker_canvas.create_image(self.bottom_canvas_draw_next_pos, 110, anchor='e', image=self.timer_show)
 
     def show_bottom_message(self, message):
         self.bottom_message_value.set(message)
@@ -486,41 +523,41 @@ class Application(object):
             self.player.prepare_ready()
 
     def poker_click_callback(self, event):
-        all_id = self.bottom_poker_canvas.find_closest(event.x, event.y)  # halo =3容易找到细直线
-        if all_id[0] in self.__selected_poker_list:
-            self.bottom_poker_canvas.move(all_id[0], 0, 20)
-            self.__selected_poker_list.remove(all_id[0])
-        else:
-            self.bottom_poker_canvas.move(all_id[0], 0, -20)
-            self.__selected_poker_list.append(all_id[0])
+        # all_id = self.bottom_poker_canvas.find_closest(event.x, event.y)  # halo =3容易找到细直线
+        all_id = self.bottom_poker_canvas.find_withtag('current')
+        click_img_id = all_id[0]
+        bounded_tag = int(self.bottom_poker_canvas.gettags(click_img_id)[0])
 
-        logger.info("We clicked poker ID {}".format(self.__selected_poker_list))
+        logger.info("tag {}, find_item {}, id {}".format(bounded_tag, self.bottom_poker_canvas.find_withtag('current'),
+                                                         all_id[0]))
+        if all_id[0] in self.__selected_poker_list:
+            # move to below
+            self.bottom_poker_canvas.move(click_img_id, 0, 20)
+            self.__selected_poker_list.remove(bounded_tag)
+        else:
+            # move up.
+            self.bottom_poker_canvas.move(click_img_id, 0, -20)
+            self.__selected_poker_list.append(bounded_tag)
+
+        logger.info("We clicked poker value {}".format(self.__selected_poker_list))
 
     def button_handout(self):
         self.__selected_poker_list.sort(reverse=True)
-        cards = self.__selected_poker_list
-
-        self.__center_pokers_list = []
-        for id in cards:
-            self.bottom_poker_canvas.delete(id)
-
-            # picture id to index.
-            index = self.__poker_id.index(id)
-            logger.debug(
-                "delete card ID {}  < ---- > Index {}  < --- > Value {}".format(id, index, self.__poker_lists[index]))
-            self.__center_pokers_list.append(self.__poker_lists[index])
-            self.__poker_lists.pop(index)
 
         if self.player:
-            self.player.hand_out(self.__center_pokers_list)
+            self.player.hand_out(self.__selected_poker_list)
             logger.info(
                 "User [{}] hand out pokers {}".format(self.bottom_user_name_widget.get(), self.__center_pokers_list))
             self.user_button_skip.config(state="disabled")
             self.user_button_handout.config(state="disabled")
 
+        self.__center_pokers_list = self.__selected_poker_list
         self.show_center_pokers()
-        self.show_bottom_pokers()
-        self.__selected_poker_list.clear()
+
+        for c in self.__center_pokers_list:
+            self.__owned_poker_list.remove(c)
+
+        self.show_bottom_pokers(self.__owned_poker_list)
 
     def button_skip(self):
         if self.player:
