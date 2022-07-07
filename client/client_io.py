@@ -122,7 +122,7 @@ class NetworkHandler(threading.Thread):
                 "position": -1,
                 "pokers": "",
                 "status": -1,
-                "message": str(e)
+                "message": "Server disconnect connection"
             }
 
             self.recv_queue.put(msg)

@@ -281,10 +281,6 @@ class Application(object):
         self.show_top_message("")
         self.show_bottom_message("")
 
-    def show_bottom_push_action(self):
-        self.show_bottom_timer()
-        # play music.
-
     def ui_msg_dispatcher(self):
         # refresh the GUI with new data from the queue
         while self.player.has_new_message():
@@ -298,7 +294,7 @@ class Application(object):
                 tkinter.messagebox.showerror(title='登录失败', message=msg['message'])
                 self.show_bottom_message(msg['message'])
             elif msg['action'] == "status_broadcast":
-
+                # draw center pokers.
                 if len(msg["center_pokers"]) > 0:
                     self.__center_pokers_list = msg["center_pokers"]
                     self.show_center_pokers()
@@ -333,90 +329,41 @@ class Application(object):
 
                 self.clear_all_canvas()
 
-                # set active user
-                if msg["active_pos"] == (self.we_seat_pos + 1) % 4:
-                    self.show_right_timer()
-                elif msg["active_pos"] == (self.we_seat_pos + 2) % 4:
-                    self.show_top_timer()
-                elif msg["active_pos"] == (self.we_seat_pos + 3) % 4:
-                    self.show_left_timer()
-                if msg["active_pos"] == self.we_seat_pos:
-                    self.show_bottom_push_action()
+                active_pos = msg["active_pos"]
+                if -1 < active_pos < 4:
+                    self.__user_ui_panel[(active_pos + 4 - self.we_seat_pos) % 4].timer = True
 
                 for seat_player in msg['status_all']:
                     player_name = seat_player['player_name']
                     seat_pos = seat_player['position']
                     player_status = seat_player['status']
 
+                    layout_index = (seat_pos + 4 - self.we_seat_pos) % 4
+
                     if player_status == PlayerStatus.Logined.value:
-                        if seat_pos == (self.we_seat_pos + 1) % 4:
-                            self.right_user_name_value.set(player_name)
-                            self.show_right_message("上线了")
-                        # face
-                        elif seat_pos == (self.we_seat_pos + 2) % 4:
-                            self.top_user_name_value.set(player_name)
-                            self.show_top_message("上线了")
-                        # left.
-                        elif seat_pos == (self.we_seat_pos + 3) % 4:
-                            self.left_user_name_value.set(player_name)
-                            self.show_left_message("上线了")
-                        elif seat_pos == self.we_seat_pos:
-                            pass
-                        else:
-                            logger.error(
-                                "We got something error, our pos {}, user seated pos {}".format(self.we_seat_pos,
-                                                                                                seat_pos))
+                        if -1 < seat_pos < 4:
+                            self.__user_ui_panel[layout_index].name = player_name
+                            self.__user_ui_panel[layout_index].message = "上线了"
+
                     elif player_status == PlayerStatus.Started.value:
-                        if seat_pos == (self.we_seat_pos + 1) % 4:
-                            self.right_user_name_value.set(player_name)
-                            self.show_right_message("准备好了")
-                        # face
-                        elif seat_pos == (self.we_seat_pos + 2) % 4:
-                            self.top_user_name_value.set(player_name)
-                            self.show_top_message("准备好了")
-                        # left.
-                        elif seat_pos == (self.we_seat_pos + 3) % 4:
-                            self.left_user_name_value.set(player_name)
-                            self.show_left_message("准备好了")
-                        elif seat_pos == self.we_seat_pos:
-                            self.show_bottom_message("准备好了")
-                            self.user_button_start.config(state="disabled")
-                        else:
-                            logger.fatal("We have got a incorrect position.")
+                        if -1 < seat_pos < 4:
+                            self.__user_ui_panel[layout_index].name = player_name
+                            self.__user_ui_panel[layout_index].message = "准备好了"
+
                     elif player_status == PlayerStatus.Handout.value or player_status == PlayerStatus.SingleOne.value \
                             or player_status == PlayerStatus.NoTake.value or player_status == PlayerStatus.Share2 \
                             or player_status == PlayerStatus.NoShare.value:
-
                         notify_message = seat_player["message"]
-                        if player_status == PlayerStatus.SingleOne.value:
-                            self.clear_all_message()
-
                         cards = seat_player['pokers']
-                        cards_count = len(cards)
-                        if cards_count > 5:
-                            cards_count = 10
-                        if seat_pos == (self.we_seat_pos + 1) % 4:
-                            self.show_right_pokers([3] * cards_count)
-                            self.show_right_message(notify_message)
-                            self.right_user_name_value.set(player_name)
-                        # face
-                        elif seat_pos == (self.we_seat_pos + 2) % 4:
-                            # 只显示 10 张表示有很多。
-                            self.show_top_pokers([3] * cards_count)
-                            self.show_top_message(notify_message)
-                            self.top_user_name_value.set(player_name)
-                        # left.
-                        elif seat_pos == (self.we_seat_pos + 3) % 4:
-                            self.show_left_pokers([3] * cards_count)
-                            self.show_left_message(notify_message)
-                            self.left_user_name_value.set(player_name)
-                        elif seat_pos == self.we_seat_pos:
+                        if -1 < seat_pos < 4:
+                            self.__user_ui_panel[layout_index].name = player_name
+                            self.__user_ui_panel[layout_index].message = notify_message
+                            self.__user_ui_panel[layout_index].pokers = cards
+
+                        # Button activity status
+                        if seat_pos == self.we_seat_pos:
                             # User save the poker lists.
                             self.player.set_player_owned_pokers(cards)
-                            self.show_bottom_pokers(cards)
-                            self.bottom_user_name_value.set(player_name)
-                            self.show_bottom_message(notify_message)
-                            self.user_button_start.config(state="disabled")
 
                             if player_status == PlayerStatus.Share2.value:
                                 self.user_button_share.config(state="active")
@@ -435,23 +382,10 @@ class Application(object):
                                         self.user_button_skip.config(state="disabled")
                                     else:
                                         self.user_button_skip.config(state="active")
-                        else:
-                            # TODO why wrong?
-                            logger.fatal("We have got a incorrect position {}".format(self.we_seat_pos))
-                            logger.fatal("user {} seated at pos {} get new status {}".format(seat_player['player_name'],
-                                                                                             seat_player['position'],
-                                                                                             seat_player['status']))
 
                     elif player_status == PlayerStatus.RunOut:
-                        if seat_pos == (self.we_seat_pos + 1) % 4:
-                            self.show_right_message("出完了")
-                        # face
-                        elif seat_pos == (self.we_seat_pos + 2) % 4:
-                            # 只显示 10 张表示有很多。
-                            self.show_top_message("出完了")
-                        # left.
-                        elif seat_pos == (self.we_seat_pos + 3) % 4:
-                            self.show_left_message("出完了")
+                        if -1 < seat_pos < 4:
+                            self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].message = "出完了"
 
         #  timer to refresh the gui with data from the asyncio thread
         self.__window.after(200, self.ui_msg_dispatcher)  # called only once!
@@ -478,6 +412,9 @@ class Application(object):
         self.left_poker_canvas.create_image(150, 20, anchor='n', image=self.timer_show)
 
     def show_left_pokers(self, cards):
+        # only 5 pokers will show real status.
+        if len(cards) > 5:
+            cards = [3] * 10
         for idx, card in enumerate(cards):
             x = 150
             y = (140 + idx * 20)
@@ -487,6 +424,10 @@ class Application(object):
         self.right_poker_canvas.create_image(150, 20, anchor='n', image=self.timer_show)
 
     def show_right_pokers(self, cards):
+        # only 5 pokers will show real status.
+        if len(cards) > 5:
+            cards = [3] * 10
+
         for idx, card in enumerate(cards):
             x = 150
             y = (140 + idx * 20)
@@ -498,6 +439,10 @@ class Application(object):
 
     def show_top_pokers(self, cards):
         self.width = self.__window.winfo_screenwidth()
+
+        # only 5 pokers will show real status.
+        if len(cards) > 5:
+            cards = [3] * 10
 
         for idx, card in enumerate(cards):
             x = self.width // 4 + 170 + idx * 30
@@ -521,6 +466,7 @@ class Application(object):
     def button_start(self):
         if self.player:
             self.player.prepare_ready()
+        self.user_button_start.config(state="disabled")
 
     def poker_click_callback(self, event):
         # all_id = self.bottom_poker_canvas.find_closest(event.x, event.y)  # halo =3容易找到细直线

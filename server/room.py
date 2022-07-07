@@ -81,6 +81,11 @@ class RoomImpl(AbstractGameRoom):
     def users(self):
         return self.__room_players
 
+    def is_user_online(self, player_name):
+        for player in self.__room_players:
+            if player.get_player_name() == player_name:
+                return player.get_player_status() != PlayerStatus.Offline
+
     def is_user_logined(self, player_name):
         for player in self.__room_players:
             if player.get_player_name() == player_name:

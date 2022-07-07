@@ -56,6 +56,10 @@ class GameServer(object):
             player_name = message.get_player_name()
 
             if True or player_name in GameServer.VALID_USERS:
+                for room in self.__room_list:
+                    if room.is_user_online(player_name):
+                        return False, "login twice."
+
                 room_id = self.get_room_id_by_player_name(player_name)
                 # logger.debug("User [ " + player_name + " ] logined assigned room " + str(room_id))
                 if room_id == -1:
