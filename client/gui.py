@@ -378,7 +378,7 @@ class Application(object):
                                 elif player_status == PlayerStatus.Handout.value:
                                     self.user_button_handout.config(state="active")
                                     # 不是我们出的或没人出过牌，禁用过牌
-                                    if msg['center_poker_issuer'] != self.we_seat_pos:
+                                    if msg['center_poker_issuer'] == self.we_seat_pos:
                                         self.user_button_skip.config(state="disabled")
                                     else:
                                         self.user_button_skip.config(state="active")
@@ -476,7 +476,7 @@ class Application(object):
 
         logger.info("tag {}, find_item {}, id {}".format(bounded_tag, self.bottom_poker_canvas.find_withtag('current'),
                                                          all_id[0]))
-        if all_id[0] in self.__selected_poker_list:
+        if bounded_tag in self.__selected_poker_list:
             # move to below
             self.bottom_poker_canvas.move(click_img_id, 0, 20)
             self.__selected_poker_list.remove(bounded_tag)
