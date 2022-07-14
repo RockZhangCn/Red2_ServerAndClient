@@ -175,11 +175,13 @@ class RoomImpl(AbstractGameRoom):
 
             if new_player.get_player_status() == PlayerStatus.Handout and len(new_player.get_owned_pokers()) == 0:
                 new_player.set_player_status(PlayerStatus.RunOut)
+                new_player.set_notify_message("出完了")
 
             status_msg = ServerMessage(new_player)
             status_msg.build_resp_status_message()
             user_status_info.append(status_msg.to_dict())
 
+        # Not start ,there is no order.
         actual_order_pos = -1
         if self.__game_started:
             actual_order_pos = self.__current_order_pos
@@ -226,14 +228,12 @@ class RoomImpl(AbstractGameRoom):
                 pos = idx
 
                 # The game is in progress, exit will be marked as offline.
-                if user.get_player_status() in (
-                        PlayerStatus.Started, PlayerStatus.SingleOne, PlayerStatus.Share2, PlayerStatus.Handout) and \
+                if user.get_player_status() in (PlayerStatus.SingleOne, PlayerStatus.NoTake,
+                                                PlayerStatus.NoShare,
+                                                PlayerStatus.Share2, PlayerStatus.Handout) and \
                         self.__game_started:
                     user.set_player_status(PlayerStatus.Offline)
                     logger.info("We set user [{}] in Offline status ".format(user.get_player_name()))
-
-                    if len(self.__room_players) == 0:
-                        self.reset_room_data()
                     return
 
         if -1 != pos:
@@ -242,5 +242,6 @@ class RoomImpl(AbstractGameRoom):
             self.__room_players.pop(pos)
             logger.info("we clear user [ {} ] left {} users".format(clear_name, len(self.__room_players)))
 
+            # last user, release room.
             if len(self.__room_players) == 0:
                 self.reset_room_data()
