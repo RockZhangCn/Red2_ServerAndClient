@@ -208,9 +208,14 @@ class ServerPlayer(Player):
                 logger.info("Server received User [{}] pos {} status {}".format(self.get_player_name(),
                                                                                 self.get_player_pos(),
                                                                                 self.get_player_status()))
+
+                if self.get_player_status() == PlayerStatus.Logined.value:
+                    self.set_notify_message("上线了")
+                elif self.get_player_status() == PlayerStatus.Started.value:
+                    self.set_notify_message("准备好了")
                 # received take2 or no take.
                 # 有人抢红2 。
-                if self.get_player_status() == PlayerStatus.SingleOne.value:
+                elif self.get_player_status() == PlayerStatus.SingleOne.value:
                     self.__room.update_active_user_pos(self.get_player_pos())
                     for pos, new_player in enumerate(self.__room.users()):
                         new_player.set_player_status(PlayerStatus.Handout)
@@ -233,7 +238,7 @@ class ServerPlayer(Player):
 
                     # always move to next user.
                     self.__room.move_to_next_player()
-
+                    self.set_notify_message("不抢")
                     if notake_count == 4:
                         for pos, new_player in enumerate(self.__room.users()):
                             if new_player.get_owned_pokers().count(48) == 2:

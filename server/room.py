@@ -50,7 +50,7 @@ class RoomImpl(AbstractGameRoom):
         self.__room_id = id
         self.__room_players = []
         self.__center_pokers = []  # string list, 0*3
-        self.__current_order_pos = random.randint(0, 3)
+        self.__current_order_pos = random.randint(0, 10000) % 4
         logger.info("Room handout order get current order pos " + str(self.__current_order_pos))
         self.__last_restore_broadcast_message = None
 
