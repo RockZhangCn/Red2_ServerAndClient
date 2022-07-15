@@ -228,9 +228,8 @@ class RoomImpl(AbstractGameRoom):
                 pos = idx
 
                 # The game is in progress, exit will be marked as offline.
-                if user.get_player_status() in (PlayerStatus.SingleOne, PlayerStatus.NoTake,
-                                                PlayerStatus.NoShare,
-                                                PlayerStatus.Share2, PlayerStatus.Handout) and \
+                if user.get_player_status() in (
+                        PlayerStatus.SingleOne, PlayerStatus.Share2, PlayerStatus.Handout) and \
                         self.__game_started:
                     user.set_player_status(PlayerStatus.Offline)
                     logger.info("We set user [{}] in Offline status ".format(user.get_player_name()))
