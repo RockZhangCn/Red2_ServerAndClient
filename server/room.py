@@ -159,7 +159,7 @@ class RoomImpl(AbstractGameRoom):
             if started_user_count == 4:
                 new_player.set_player_status(PlayerStatus.SingleOne)
 
-            if new_player.get_player_status() == PlayerStatus.Handout and len(new_player.get_owned_pokers()) == 0:
+            if new_player.get_player_status() == PlayerStatus.RunOut and len(new_player.get_owned_pokers()) == 0:
                 new_player.set_player_status(PlayerStatus.RunOut)
                 new_player.set_notify_message("出完了")
 

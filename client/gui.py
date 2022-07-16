@@ -256,7 +256,7 @@ class Application(object):
     def show_bottom_pokers(self, cards):
         # clear all.
         self.bottom_poker_canvas.delete("all")
-        self.__selected_poker_list.clear()#我在不是我顺序的时候，选中的，到下一个还在砂？
+        self.__selected_poker_list.clear()
 
         self.bottom_canvas_draw_next_pos = 0
 
@@ -385,7 +385,7 @@ class Application(object):
 
                     elif player_status == PlayerStatus.RunOut:
                         if -1 < seat_pos < 4:
-                            self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].message = "出完了"
+                            self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].message = notify_message
 
         #  timer to refresh the gui with data from the asyncio thread
         self.__window.after(200, self.ui_msg_dispatcher)  # called only once!
