@@ -261,8 +261,11 @@ class ServerPlayer(Player):
                     issued_pokers = copy.deepcopy(hand_out_cards)
                     self.__room.move_to_next_player()
                     if len(hand_out_cards) > 0:
+                        self.set_notify_message("出牌{}张".format(len(hand_out_cards)))
                         self.hand_out_cards(hand_out_cards)
                         self.__room.set_center_pokers(issued_pokers, self.get_player_pos())
+                    else:
+                        self.set_notify_message("过牌")
                 elif self.get_player_status() == PlayerStatus.RunOut.value:
                     logger.info("We received user {} run out".format(self.get_player_name()))
                     # TODO should we move to next player ?

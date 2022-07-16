@@ -19,14 +19,6 @@ class AbstractGameRoom(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def received_message(self, server_player, message):
-        pass
-
-    @abstractmethod
-    def valid_message(self, server_player, message):
-        pass
-
-    @abstractmethod
     def assign_new_player(self, name, ws):
         pass
 
@@ -109,12 +101,6 @@ class RoomImpl(AbstractGameRoom):
                                                                              pos, player_cards))
             player.set_player_owned_pokers(player_cards)
             player.set_has_red2(player_cards.count(48) > 0)
-
-    def received_message(self, server_player, message):
-        pass
-
-    def valid_message(self, ws, message):
-        pass
 
     async def broadcast_message(self, message):
         for player in self.users():
