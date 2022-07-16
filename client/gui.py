@@ -52,7 +52,7 @@ class Application(object):
         self.__window.protocol("WM_DELETE_WINDOW", self.close_all)
 
         self.__center_pokers_list = []
-        self.__selected_poker_list = list()
+        self.__selected_poker_list = list() # 排面值＋绘图的顺序值，防止两张一样的牌无法区分。
         self.__owned_poker_list = []
         self.bottom_canvas_draw_next_pos = 0
         self.we_seat_pos = -1
@@ -256,10 +256,10 @@ class Application(object):
     def show_bottom_pokers(self, cards):
         # clear all.
         self.bottom_poker_canvas.delete("all")
-        self.__selected_poker_list.clear()
+        self.__selected_poker_list.clear()#我在不是我顺序的时候，选中的，到下一个还在砂？
 
         self.bottom_canvas_draw_next_pos = 0
-        self.__owned_poker_list = cards
+
         for idx, card in enumerate(cards):
             x = self.width // 5 + idx * 30
             y = 110  #
@@ -476,28 +476,34 @@ class Application(object):
 
         logger.info("tag {}, find_item {}, id {}".format(bounded_tag, self.bottom_poker_canvas.find_withtag('current'),
                                                          all_id[0]))
-        if bounded_tag in self.__selected_poker_list:
+        clicked_poker = (bounded_tag, click_img_id)
+        # 两张同样的牌导致出不了。因为在 __selected_poker_list 是一样的。
+        if clicked_poker in self.__selected_poker_list:
             # move to below
             self.bottom_poker_canvas.move(click_img_id, 0, 20)
-            self.__selected_poker_list.remove(bounded_tag)
+            self.__selected_poker_list.remove(clicked_poker)
         else:
             # move up.
             self.bottom_poker_canvas.move(click_img_id, 0, -20)
-            self.__selected_poker_list.append(bounded_tag)
+            self.__selected_poker_list.append(clicked_poker)
 
         logger.info("We clicked poker value {}".format(self.__selected_poker_list))
 
     def button_handout(self):
         self.__selected_poker_list.sort(reverse=True)
 
+        poker_list = list()
+        for x in self.__selected_poker_list:
+            poker_list.append(x[0])
+
         if self.player:
-            self.player.hand_out(self.__selected_poker_list)
+            self.player.hand_out(poker_list)
             logger.info(
                 "User [{}] hand out pokers {}".format(self.bottom_user_name_widget.get(), self.__center_pokers_list))
             self.user_button_skip.config(state="disabled")
             self.user_button_handout.config(state="disabled")
 
-        self.__center_pokers_list = self.__selected_poker_list
+        self.__center_pokers_list = poker_list
         self.show_center_pokers()
 
         for c in self.__center_pokers_list:
