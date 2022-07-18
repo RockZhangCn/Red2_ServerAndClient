@@ -210,6 +210,7 @@ class ServerPlayer(Player):
                                                                                 self.get_player_status()))
 
                 if self.get_player_status() == PlayerStatus.Logined.value:
+                    # never run here ? in check_permit handle login.
                     self.set_notify_message("上线了")
                 elif self.get_player_status() == PlayerStatus.Started.value:
                     self.set_notify_message("准备好了")

@@ -2,7 +2,7 @@ import json
 import random
 from abc import abstractmethod, ABCMeta
 
-from common.card import Card
+from common.card import Card, CardMode
 from common.message import ServerMessage
 from common.player import ServerPlayer
 from common.player_status import PlayerStatus
@@ -43,6 +43,7 @@ class RoomImpl(AbstractGameRoom):
         self.__room_players = []
         self.__center_pokers = []  # string list, 0*3
         self.__current_order_pos = random.randint(0, 10000) % 4
+        self.__center_mode = CardMode.MODE_INVALID
         logger.info("Room handout order get current order pos " + str(self.__current_order_pos))
         self.__last_restore_broadcast_message = None
 
@@ -57,6 +58,7 @@ class RoomImpl(AbstractGameRoom):
         logger.info("Server set center user pos [ {} ] issued pokers {}".format(owner_pos, cards))
         self.__center_pokers = cards
         self.__center_pokers_owner_pos = owner_pos
+        self.__center_mode = CardMode.value(cards)
 
     def room_id(self):
         return self.__room_id
@@ -180,6 +182,7 @@ class RoomImpl(AbstractGameRoom):
                             "active_pos": actual_order_pos,  # current player handout. or do decision.
                             "center_poker_issuer": self.__center_pokers_owner_pos,  # center pokers handed by who ?
                             "center_pokers": self.__center_pokers,
+                            "center_mode": self.__center_mode,
                             "recover_pos": -1,
                             "status_all": user_status_info}
         self.__last_restore_broadcast_message = game_status_data
@@ -202,6 +205,7 @@ class RoomImpl(AbstractGameRoom):
         self.__room_players.append(new_player)
         pos = self.__room_players.index(new_player)
         new_player.set_player_pos(pos)
+        new_player.set_notify_message("Seat pos " + pos)
 
         # build status message.
         await self.broadcast_user_status(pos)

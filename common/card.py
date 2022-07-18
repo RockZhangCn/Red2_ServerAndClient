@@ -24,21 +24,21 @@ class Card(object):
             return 0
 
 
-class CardHand(object):
-    MODE_SINGLE = 1 # "single"
-    MODE_PAIR = 2 #"pair"
-    MODE_THREE = 3 #"three"
-    MODE_THREE_ONE = 4 # "three1"  8883
-    MODE_THREE_TWE = 5 #"three2"   88833
-    MODE_AIRPLANE_NONE = 6 # MODE_THREE + "s"  # 2*3  555666
-    MODE_AIRPLANE_ONE = 7 # MODE_THREE_ONE + "s"  # 2*4  55576668
-    MODE_AIRPLANE_TWE = 8 #MODE_THREE_TWE + "s"  # 2*5   5557766688
-    MODE_SINGLE_LONG = 9 # "single_long"  # 6   345678
-    MODE_PAIR_LONG = 10 # "pair_long"  # 6    334455
+class CardMode(object):
+    MODE_SINGLE = 1  # "single"
+    MODE_PAIR = 2  # "pair"
+    MODE_THREE = 3  # "three"
+    MODE_THREE_ONE = 4  # "three1"  8883
+    MODE_THREE_TWE = 5  # "three2"   88833
+    MODE_AIRPLANE_NONE = 6  # MODE_THREE + "s"  # 2*3  555666
+    MODE_AIRPLANE_ONE = 7  # MODE_THREE_ONE + "s"  # 2*4  55576668
+    MODE_AIRPLANE_TWE = 8  # MODE_THREE_TWE + "s"  # 2*5   5557766688
+    MODE_SINGLE_LONG = 9  # "single_long"  # 6   345678
+    MODE_PAIR_LONG = 10  # "pair_long"  # 6    334455
 
-    MODE_BOMB = 11 # "bombs"  # 4   3333
-    MODE_TWO_RED2 = 12 # "king2"  # 2   22
-    MODE_INVALID = -1 #"invalid"
+    MODE_BOMB = 11  # "bombs"  # 4   3333
+    MODE_TWO_RED2 = 12  # "king2"  # 2   22
+    MODE_INVALID = -1  # "invalid"
 
     @staticmethod
     def value(cards):
@@ -51,52 +51,59 @@ class CardHand(object):
         cnt = len(cards)
         value_set_len = len(value_set)
         if cnt == 1:
-            return CardHand.MODE_SINGLE
+            return CardMode.MODE_SINGLE
         elif cnt == 2 and value_set_len == 1:
             if cards == [48, 48]:
-                return CardHand.MODE_TWO_RED2
+                return CardMode.MODE_TWO_RED2
             else:
-                return CardHand.MODE_PAIR
+                return CardMode.MODE_PAIR
 
-        elif cnt == 3 and value_set_len == 3:
-            return CardHand.MODE_THREE
+        elif cnt == 3 and value_set_len == 1:
+            return CardMode.MODE_THREE
 
         elif cnt == 4:
             if value_set_len == 2:
-                # TODO
-                return CardHand.MODE_THREE_ONE
+                if cards[0] == cards[1] == cards[2] or \
+                        cards[3] == cards[1] == cards[2]:
+                    return CardMode.MODE_THREE_ONE
+                else:
+                    return CardMode.MODE_INVALID
+
             elif value_set_len == 1:
-                return CardHand.MODE_BOMB
+                return CardMode.MODE_BOMB
             else:
-                return CardHand.MODE_INVALID
+                return CardMode.MODE_INVALID
 
         elif cnt == 5:
             if value_set_len == 2:
-                # TODO more detail
-                return CardHand.MODE_THREE_TWE
+                if (cards[0] == cards[1] == cards[2] and cards[3] == cards[4]) or \
+                        (cards[3] == cards[4] == cards[2] and cards[0] == cards[1]) :
+                    return CardMode.MODE_THREE_TWE
+                else:
+                    return CardMode.MODE_INVALID
             elif value_set_len == 1:
-                return CardHand.MODE_BOMB
+                return CardMode.MODE_BOMB
             else:
-                return CardHand.MODE_INVALID
+                return CardMode.MODE_INVALID
 
-        elif cnt >= 6:
+        elif cnt >= 6:# 部分不太准确。
             if value_set_len == cnt:
-                return CardHand.MODE_SINGLE_LONG
+                return CardMode.MODE_SINGLE_LONG
             if value_set_len == cnt // 2:
                 # TODO more detail
-                return CardHand.MODE_PAIR_LONG
+                return CardMode.MODE_PAIR_LONG
             if value_set_len == cnt // 3:
-                return CardHand.MODE_AIRPLANE_NONE
+                return CardMode.MODE_AIRPLANE_NONE
             if value_set_len == 1:
-                return CardHand.MODE_BOMB
-            if cnt % 5 == 0 and cnt//5 <= value_set_len == (cnt // 5) * 2:
-                return CardHand.MODE_AIRPLANE_TWE
-            if cnt % 4 == 0 and cnt//4 <= value_set_len <= (cnt // 4) * 2:
-                return CardHand.MODE_AIRPLANE_ONE
+                return CardMode.MODE_BOMB
+            if cnt % 5 == 0 and cnt // 5 <= value_set_len <= (cnt // 5) * 2:
+                return CardMode.MODE_AIRPLANE_TWE
+            if cnt % 4 == 0 and cnt // 4 <= value_set_len <= (cnt // 4) * 2:
+                return CardMode.MODE_AIRPLANE_ONE
 
-            return CardHand.MODE_INVALID
+            return CardMode.MODE_INVALID
         else:
-            return CardHand.MODE_INVALID
+            return CardMode.MODE_INVALID
 
 
 if __name__ == '__main__':

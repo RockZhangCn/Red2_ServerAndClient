@@ -14,7 +14,7 @@ from PIL.ImageTk import PhotoImage
 from common.player import ClientPlayer
 from common.player_status import PlayerStatus
 from log.log import logger
-
+from common.card import CardMode
 
 class UserUIPanel(object):
     def __init__(self, name_widget, message_widget, show_timer, show_pokers):
@@ -495,6 +495,11 @@ class Application(object):
         poker_list = list()
         for x in self.__selected_poker_list:
             poker_list.append(x[0])
+
+        if CardMode.value(poker_list) == CardMode.MODE_INVALID:
+            tkinter.messagebox.showerror(title='出错错误',
+                                        message='不符合规则')
+            return
 
         if self.player:
             self.player.hand_out(poker_list)
