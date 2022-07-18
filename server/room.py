@@ -221,6 +221,8 @@ class RoomImpl(AbstractGameRoom):
                     return
 
         if -1 != pos:
+            if len(self.__room_players) == 0:
+                return
             logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, len(self.users()), reason))
             clear_name = self.__room_players[pos].get_player_name()
             self.__room_players.pop(pos)
