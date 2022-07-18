@@ -78,13 +78,16 @@ class RoomImpl(AbstractGameRoom):
             if player.get_player_name() == player_name:
                 return player.get_player_status() != PlayerStatus.Offline
 
+        return False
+
     def is_user_logined(self, player_name):
         for player in self.__room_players:
             if player.get_player_name() == player_name:
                 if player.get_player_status() != PlayerStatus.Offline:
                     logger.warning("User [{}] relogined due to incorrect status {}".format(player_name,
                                                                                            player.get_player_status()))
-                return True
+                else:
+                    return True
 
         return False
 
@@ -206,13 +209,9 @@ class RoomImpl(AbstractGameRoom):
 
         return True, "Success"
 
-    async def clear_user(self, ws, reason):
-        pos = -1
-
+    async def clear_user(self, pos, reason):
         for idx, user in enumerate(self.__room_players):
-            if user.get_websocket() == ws:
-                pos = idx
-
+            if user.get_player_pos() == pos:
                 # The game is in progress, exit will be marked as offline.
                 if user.get_player_status() in (
                         PlayerStatus.SingleOne, PlayerStatus.Share2, PlayerStatus.Handout) and \

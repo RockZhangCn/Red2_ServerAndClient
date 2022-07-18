@@ -167,10 +167,10 @@ class ServerPlayer(Player):
                 await self.get_websocket().send('{"action":"pong"}')
                 logger.debug('Server sent to user [' + self.get_player_name() + '] ---> {"action":"pong"}')
             except websockets.exceptions.ConnectionClosedError:
-                await self.__room.clear_user(self, "hearbeat websockets.exceptions.ConnectionClosedError")
+                await self.__room.clear_user(self.get_player_pos(), "hearbeat websockets.exceptions.ConnectionClosedError")
                 break
             except websockets.exceptions.ConnectionClosedOK:
-                await self.__room.clear_user(self, "hearbeat websockets.exceptions.ConnectionClosedOK")
+                await self.__room.clear_user(self.get_player_pos(), "hearbeat websockets.exceptions.ConnectionClosedOK")
                 break
             except Exception as e:
                 logger.fatal("heartbeat meet exception " + str(e))
@@ -278,11 +278,11 @@ class ServerPlayer(Player):
 
                 # check start the game.
             except websockets.exceptions.ConnectionClosedError:
-                await self.__room.clear_user(self.get_websocket(),
+                await self.__room.clear_user(self.get_player_pos(),
                                              "recv_msg websockets.exceptions.ConnectionClosedError")
                 break
             except websockets.exceptions.ConnectionClosedOK:
-                await self.__room.clear_user(self.get_websocket(), "recv_msg websockets.exceptions.ConnectionClosedOK")
+                await self.__room.clear_user(self.get_player_pos(), "recv_msg websockets.exceptions.ConnectionClosedOK")
                 break
             except Exception as e:
                 logger.fatal("Server is meet exception " + str(e))
