@@ -205,7 +205,7 @@ class RoomImpl(AbstractGameRoom):
         self.__room_players.append(new_player)
         pos = self.__room_players.index(new_player)
         new_player.set_player_pos(pos)
-        new_player.set_notify_message("Seat pos " + pos)
+        new_player.set_notify_message("Seat pos {}".format(pos))
 
         # build status message.
         await self.broadcast_user_status(pos)
