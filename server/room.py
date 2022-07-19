@@ -214,24 +214,31 @@ class RoomImpl(AbstractGameRoom):
         return True, "Success"
 
     async def clear_user(self, pos, reason):
-        for idx, user in enumerate(self.__room_players):
+        clear_user = None
+        for user in self.__room_players:
             if user.get_player_pos() == pos:
                 # The game is in progress, exit will be marked as offline.
                 if user.get_player_status() in (
                         PlayerStatus.SingleOne, PlayerStatus.Share2, PlayerStatus.Handout) and \
                         self.__game_started:
                     user.set_player_status(PlayerStatus.Offline)
+                    user.set_notify_message("断线了")
                     logger.info("We set user [{}] in Offline status ".format(user.get_player_name()))
+                    await self.broadcast_user_status(-1)
                     return
+                else:
+                    clear_user = user
 
-        if -1 != pos:
-            if len(self.__room_players) == 0:
-                return
+        if clear_user is not None:
             logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, len(self.users()), reason))
+            clear_user.set_player_status(PlayerStatus.Unlogin)
             clear_name = self.__room_players[pos].get_player_name()
+            await self.broadcast_user_status(-1)
             self.__room_players.pop(pos)
             logger.info("we clear user [ {} ] left {} users".format(clear_name, len(self.__room_players)))
+
 
             # last user, release room.
             if len(self.__room_players) == 0:
                 self.reset_room_data()
+

@@ -3,6 +3,7 @@ from enum import unique, IntEnum
 
 @unique
 class PlayerStatus(IntEnum):
+    Unlogin = -2
     Offline = -1
     Logined = 0
     Started = 1  # 全部Start后，仍然应该是start。

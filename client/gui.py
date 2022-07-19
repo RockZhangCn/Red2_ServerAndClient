@@ -387,6 +387,12 @@ class Application(object):
                         if -1 < seat_pos < 4:
                             self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].message = notify_message
 
+                    elif player_status == PlayerStatus.Unlogin:
+                        if -1 < seat_pos < 4:
+                            self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].message = ""
+                            self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].name = ""
+                            self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].timer = False
+                            self.__user_ui_panel[(self.we_seat_pos + 4 - seat_pos) % 4].pokers = []
         #  timer to refresh the gui with data from the asyncio thread
         self.__window.after(200, self.ui_msg_dispatcher)  # called only once!
 
