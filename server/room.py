@@ -40,7 +40,7 @@ class RoomImpl(AbstractGameRoom):
         self.__game_started = False
         self.__center_pokers_owner_pos = -1
         self.__room_id = id
-        self.__room_players = []
+        self.__room_players = [None, None, None, None]
         self.__center_pokers = []  # string list, 0*3
         self.__current_order_pos = random.randint(0, 10000) % 4
         self.__center_mode = CardMode.MODE_INVALID
@@ -50,7 +50,7 @@ class RoomImpl(AbstractGameRoom):
     def reset_room_data(self):
         self.__game_started = False
         self.__center_pokers_owner_pos = -1
-        self.__room_players = []
+        self.__room_players = [None, None, None, None]
         self.__center_pokers = []
         logger.info("Room id {} is reset game data".format(self.__room_id))
 
@@ -65,26 +65,28 @@ class RoomImpl(AbstractGameRoom):
 
     def move_to_next_player(self):
         self.__current_order_pos = (self.__current_order_pos + 1) % 4
+        if self.__room_players[self.__current_order_pos] is None:
+            return
         if self.__room_players[self.__current_order_pos].get_player_status() == PlayerStatus.RunOut:
             self.move_to_next_player()
         logger.info("Server room move_to_next_player pos {}".format(self.__current_order_pos))
 
     def is_room_full(self):
-        return len(self.users()) == 4
+        return self.get_user_count() == 4
 
     def users(self):
         return self.__room_players
 
     def is_user_online(self, player_name):
         for player in self.__room_players:
-            if player.get_player_name() == player_name:
+            if player is not None and player.get_player_name() == player_name:
                 return player.get_player_status() != PlayerStatus.Offline
 
         return False
 
     def is_user_logined(self, player_name):
         for player in self.__room_players:
-            if player.get_player_name() == player_name:
+            if player is not None and player.get_player_name() == player_name:
                 if player.get_player_status() != PlayerStatus.Offline:
                     logger.warning("User [{}] relogined due to incorrect status {}".format(player_name,
                                                                                            player.get_player_status()))
@@ -97,8 +99,11 @@ class RoomImpl(AbstractGameRoom):
         all_cards = Card.all_cards
         random.shuffle(all_cards)
         logger.info("We begin to dispatcher_pokers start ")
-        assert (len(self.users()) == 4)
+        assert (self.get_user_count() == 4)
         for pos, player in enumerate(self.users()):
+            if player is None:
+                logger.error("assign_initial_pokers get None Player in list")
+                continue
             # range step 4.
             player_cards = [all_cards[x + pos] for x in range(0, len(all_cards), 4)]
             player_cards.sort(reverse=True)
@@ -109,6 +114,8 @@ class RoomImpl(AbstractGameRoom):
 
     async def broadcast_message(self, message):
         for player in self.users():
+            if player is None:
+                continue
             await player.send_msg(message)
 
     def get_user_status_from_restore_message(self, name):
@@ -124,6 +131,8 @@ class RoomImpl(AbstractGameRoom):
         logger.warning("We update_user_websocket name [" + name + "]")
         find_player = None
         for player in self.users():
+            if player is None:
+                continue
             if player.get_player_name() == name and player.get_player_status() == PlayerStatus.Offline:
                 player.set_websocket(ws)
                 status = self.get_user_status_from_restore_message(name)
@@ -150,6 +159,8 @@ class RoomImpl(AbstractGameRoom):
     async def broadcast_user_status(self, reply_player_pos):
         started_user_count = 0
         for pos, new_player in enumerate(self.__room_players):
+            if new_player is None:
+                continue
             if new_player.get_player_status() == PlayerStatus.Started:
                 started_user_count += 1
 
@@ -160,6 +171,8 @@ class RoomImpl(AbstractGameRoom):
         # build status message.
         user_status_info = []
         for pos, new_player in enumerate(self.__room_players):
+            if new_player is None:
+                continue
             # 切换到出牌状态 。
             if started_user_count == 4:
                 new_player.set_player_status(PlayerStatus.SingleOne)
@@ -187,23 +200,28 @@ class RoomImpl(AbstractGameRoom):
                             "status_all": user_status_info}
         self.__last_restore_broadcast_message = game_status_data
         s = json.dumps(game_status_data)
-        logger.info("Server broad_cast_user_status {} users ---> {}".format(len(self.users()), s))
+        logger.info("Server broad_cast_user_status {} users ---> {}".format(self.get_user_count(), s))
         await self.broadcast_message(s)
 
     async def broadcast_restore_message(self):
         if self.__last_restore_broadcast_message:
             s = json.dumps(self.__last_restore_broadcast_message)
-            logger.info("Server broad_cast_user_status {} users ---> {}".format(len(self.users()), s))
+            logger.info("Server broad_cast_user_status {} users ---> {}".format(self.get_user_count(), s))
             await self.broadcast_message(s)
 
     async def assign_new_player(self, name, ws):
         new_player = ServerPlayer(name, pos=-1, ws=ws)
-        if len(self.users()) > 3:
+        if self.get_user_count() > 3:
             return False, "Server:Single room is full, can't seat new user"
 
         new_player.set_room(self)
-        self.__room_players.append(new_player)
-        pos = self.__room_players.index(new_player)
+        pos = -1
+        for idx, player in enumerate(self.__room_players):
+            if player is None:
+                self.__room_players[idx] = new_player
+                pos = idx
+                break
+
         new_player.set_player_pos(pos)
         new_player.set_notify_message("Seat pos {}".format(pos))
 
@@ -214,8 +232,12 @@ class RoomImpl(AbstractGameRoom):
         return True, "Success"
 
     async def clear_user(self, pos, reason):
-        clear_user = None
+
         for user in self.__room_players:
+            if user is None:
+                continue
+
+            # find the user.
             if user.get_player_pos() == pos:
                 # The game is in progress, exit will be marked as offline.
                 if user.get_player_status() in (
@@ -228,17 +250,23 @@ class RoomImpl(AbstractGameRoom):
                     return
                 else:
                     clear_user = user
+                    logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, self.get_user_count(), reason))
+                    clear_user.set_player_status(PlayerStatus.Unlogin)
+                    clear_name = clear_user.get_player_name()
+                    await self.broadcast_user_status(-1)
+                    self.__room_players[pos] = None
+                    logger.info("we clear user [ {} ] left {} users".format(clear_name, len(self.__room_players)))
 
-        if clear_user is not None:
-            logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, len(self.users()), reason))
-            clear_user.set_player_status(PlayerStatus.Unlogin)
-            clear_name = self.__room_players[pos].get_player_name()
-            await self.broadcast_user_status(-1)
-            self.__room_players.pop(pos)
-            logger.info("we clear user [ {} ] left {} users".format(clear_name, len(self.__room_players)))
+                    # last user, release room.
+                    if self.get_user_count() == 0:
+                        self.reset_room_data()
 
+                break
 
-            # last user, release room.
-            if len(self.__room_players) == 0:
-                self.reset_room_data()
-
+    def get_user_count(self):
+        count = 0
+        for user in self.__room_players:
+            if user is None:
+                continue
+            count += 1
+        return count

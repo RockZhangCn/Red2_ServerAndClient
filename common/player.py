@@ -219,6 +219,10 @@ class ServerPlayer(Player):
                 elif self.get_player_status() == PlayerStatus.SingleOne.value:
                     self.__room.update_active_user_pos(self.get_player_pos())
                     for pos, new_player in enumerate(self.__room.users()):
+                        if new_player is None:
+                            logger.error("some one offline when someone SingleOne.")
+                            continue
+
                         new_player.set_player_status(PlayerStatus.Handout)
 
                         # 移动牌。
@@ -234,6 +238,9 @@ class ServerPlayer(Player):
                 elif self.get_player_status() == PlayerStatus.NoTake.value:
                     notake_count = 0
                     for pos, new_player in enumerate(self.__room.users()):
+                        if new_player is None:
+                            logger.error("some one offline when NoTake")
+                            continue
                         if new_player.get_player_status() == PlayerStatus.NoTake.value:
                             notake_count += 1
 
@@ -242,13 +249,20 @@ class ServerPlayer(Player):
                     self.set_notify_message("不抢")
                     if notake_count == 4:
                         for pos, new_player in enumerate(self.__room.users()):
+                            if new_player is None:
+                                logger.error("some one offline when NoTake")
+                                continue
                             if new_player.get_owned_pokers().count(48) == 2:
                                 new_player.set_player_status(PlayerStatus.Share2)
                             else:
                                 new_player.set_player_status(PlayerStatus.Handout)
                 elif self.get_player_status() == PlayerStatus.Share2.value:
+                    if self.__room.get_user_count() < 4:
+                        logger.error("failed action")
+                        return
+
                     # move 2, and set message.
-                    self.hand_out_cards([48])
+                    self.__room.hand_out_cards([48])
                     face_pos = (self.get_player_pos() + 2) % 4
                     self.__room.users()[face_pos].received_added_red2()
                     self.__room.users()[face_pos].set_notify_message("从对家接收一个红2")
@@ -269,7 +283,7 @@ class ServerPlayer(Player):
                         self.set_notify_message("过牌")
                 elif self.get_player_status() == PlayerStatus.RunOut.value:
                     logger.info("We received user {} run out".format(self.get_player_name()))
-                    # TODO should we move to next player ?
+                    // should we move to next player ? NO move in move_to_next_player
                     pass
 
 
