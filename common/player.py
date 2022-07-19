@@ -283,7 +283,7 @@ class ServerPlayer(Player):
                         self.set_notify_message("过牌")
                 elif self.get_player_status() == PlayerStatus.RunOut.value:
                     logger.info("We received user {} run out".format(self.get_player_name()))
-                    // should we move to next player ? NO move in move_to_next_player
+                    # should we move to next player ? NO move in move_to_next_player
                     pass
 
 

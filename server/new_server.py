@@ -101,7 +101,10 @@ class GameServer(object):
                 "status": -1,
                 "message": message
             }
-            await websocket.send(json.dumps(msg))
+            try:
+                await websocket.send(json.dumps(msg))
+            except Exception as e:
+                pass
 
     def run(self):
         # 把ip换成自己本地的ip
