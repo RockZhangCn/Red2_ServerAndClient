@@ -2,6 +2,8 @@ import json
 import random
 from abc import abstractmethod, ABCMeta
 
+import websockets
+
 from common.card import Card, CardMode
 from common.message import ServerMessage
 from common.player import ServerPlayer
@@ -114,7 +116,7 @@ class RoomImpl(AbstractGameRoom):
 
     async def broadcast_message(self, message):
         for player in self.users():
-            if player is None:
+            if player is None or (player.get_player_status() == PlayerStatus.Offline):
                 continue
             await player.send_msg(message)
 
@@ -247,21 +249,21 @@ class RoomImpl(AbstractGameRoom):
                     user.set_notify_message("断线了")
                     logger.info("We set user [{}] in Offline status ".format(user.get_player_name()))
                     await self.broadcast_user_status(-1)
-                    return
                 else:
                     clear_user = user
                     logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, self.get_user_count(), reason))
                     clear_user.set_player_status(PlayerStatus.Unlogin)
+                    user.set_notify_message("退出房间了")
                     clear_name = clear_user.get_player_name()
-                    await self.broadcast_user_status(-1)
                     self.__room_players[pos] = None
-                    logger.info("we clear user [ {} ] left {} users".format(clear_name, len(self.__room_players)))
+                    await self.broadcast_user_status(-1)
+                    logger.info("we clear user [ {} ] left {} users".format(clear_name, self.get_user_count()))
 
                     # last user, release room.
                     if self.get_user_count() == 0:
                         self.reset_room_data()
 
-                break
+                return
 
     def get_user_count(self):
         count = 0
