@@ -7,12 +7,13 @@ import websockets
 
 from client.client_io import NetworkHandler
 from common.message import ClientMessage
-from common.player_status import PlayerStatus
+from common.player_status import PlayerStatus, GameResult, PlayerResult
 from log.log import logger
 
 
 class Player(object):
     def __init__(self, name, pos, ws):
+        self.__game_result = GameResult.InProgress
         self.__name = name
         self.__pos = pos
         self.__ws = ws
@@ -29,6 +30,12 @@ class Player(object):
 
     def get_notify_message(self):
         return self.__pending_message
+
+    def get_game_result(self):
+        return self.__game_result
+
+    def set_game_result(self, win):
+        self.__game_result = win
 
     def get_player_status(self):
         return self.__status
@@ -55,6 +62,10 @@ class Player(object):
         self.__owned_pokers = card_list
         self.__num_red2 = card_list.count(48)
         logger.info("set_player_owned_pokers : {} {}".format(len(card_list), card_list))
+
+    def red2_count(self):
+        return self.__num_red2
+
 
     def received_added_red2(self):
         self.__pending_message = "收到红2"
@@ -281,8 +292,32 @@ class ServerPlayer(Player):
                 elif self.get_player_status() == PlayerStatus.RunOut.value:
                     logger.info("We received user {} run out".format(self.get_player_name()))
                     # should we move to next player ? NO move in move_to_next_player
+                    end = self.__room.judge_game_over(self.get_player_pos())
+                    if end != GameResult.InProgress:
+                        for pos, new_player in enumerate(self.__room.users()):
+                            if new_player is None:
+                                logger.error("some one offline when NoTake")
+                                continue
+                            new_player.set_player_status(PlayerStatus.GameOver)
 
-                    pass
+                            if end == GameResult.Peace:
+                                new_player.set_game_result(PlayerResult.Peace)
+                                new_player.set_notify_message("Peace")
+                            elif end == GameResult.Red2Win:
+                                if new_player.red2_count() > 0:
+                                    new_player.set_game_result(PlayerResult.Win)
+                                    new_player.set_notify_message("Win")
+                                else:
+                                    new_player.set_game_result(PlayerResult.Lose)
+                                    new_player.set_notify_message("Lose")
+                            else:
+                                if new_player.red2_count() > 0:
+                                    new_player.set_game_result(PlayerResult.Lose)
+                                    new_player.set_notify_message("Lose")
+                                else:
+                                    new_player.set_game_result(PlayerResult.Win)
+                                    new_player.set_notify_message("Win")
+
 
 
                 # room broad case all this user started.

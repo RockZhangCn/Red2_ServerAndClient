@@ -7,7 +7,7 @@ import websockets
 from common.card import Card, CardMode
 from common.message import ServerMessage
 from common.player import ServerPlayer
-from common.player_status import PlayerStatus
+from common.player_status import PlayerStatus, GameResult
 from log.log import logger
 
 
@@ -66,6 +66,37 @@ class RoomImpl(AbstractGameRoom):
         self.__center_pokers = cards
         self.__center_pokers_owner_pos = owner_pos
         self.__center_mode = CardMode.value(cards)
+
+    def judge_game_over(self, run_out_player_pos):
+        self.__runout_order.append(run_out_player_pos)
+        red2_score = 0
+        non_red_score = 0
+        if self.__game_mode == 22:
+            for i in self.__runout_order:
+                if self.__room_players[i].red2_count() > 0:
+                    red2_score += (4-i)
+                else:
+                    non_red_score += (4-i)
+
+            if red2_score == 5 and non_red_score == 5:
+                return GameResult.Peace
+
+            if red2_score > 4:
+                logger.info("Red2 win")
+                return GameResult.Red2Win
+
+            if non_red_score > 4:
+                logger.info("Non red2 win")
+                return GameResult.NonRed2Win
+            return GameResult.InProgress
+
+        elif self.__game_mode == 13:
+            if self.__room_players[run_out_player_pos].red2_count() > 0:
+                logger.info("red2 win")
+                return GameResult.Red2Win
+            else:
+                logger.info("Non red2 win")
+                return GameResult.NonRed2Win
 
     def room_id(self):
         return self.__room_id

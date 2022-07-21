@@ -90,6 +90,7 @@ class ServerMessage(Message):
         self.current_msg["pokers"] = self.__server_player.get_owned_pokers()
         self.current_msg["status"] = self.__server_player.get_player_status().value
         self.current_msg['message'] = self.__server_player.get_notify_message()
+        self.current_msg['result'] = self.__server_player.get_game_result().value
 
     def to_dict(self):
         return self.current_msg

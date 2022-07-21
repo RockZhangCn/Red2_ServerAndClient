@@ -14,3 +14,19 @@ class PlayerStatus(IntEnum):
     Handout = 6
     RunOut = 7
     GameOver = 8  # --> Started
+
+
+class PlayerResult(IntEnum):
+    Win = 0
+    Lose = 1
+    Peace = 2
+    InProgress = 3
+
+
+class GameResult(IntEnum):
+    Red2Win = 0
+    Peace = 1
+    NonRed2Win = 2
+    InProgress = 3
+
+
