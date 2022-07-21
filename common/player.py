@@ -16,7 +16,7 @@ class Player(object):
         self.__name = name
         self.__pos = pos
         self.__ws = ws
-        self.__has_red2 = False
+        self.__num_red2 = 0
         self.__owned_pokers = []
         self.__status = PlayerStatus.Logined
         self.__pending_message = ""
@@ -51,30 +51,23 @@ class Player(object):
     def get_websocket(self):
         return self.__ws
 
-    def has_red2(self):
-        return self.__has_red2
-
-    def set_has_red2(self, has):
-        self.__has_red2 = has
-
     def set_player_owned_pokers(self, card_list):
         self.__owned_pokers = card_list
-
+        self.__num_red2 = card_list.count(48)
         logger.info("set_player_owned_pokers : {} {}".format(len(card_list), card_list))
 
     def received_added_red2(self):
         self.__pending_message = "收到红2"
         self.__owned_pokers.append(48)
-        self.__has_red2 = True
+        self.__num_red2 = self.__num_red2 + 1
         self.__owned_pokers.sort(reverse=True)
 
     def handout_taken_red2(self):
-        if self.__has_red2:
-            while self.__owned_pokers.count(48) > 0:
-                self.__owned_pokers.remove(48)
+        while self.__num_red2 > 0:
+            self.__owned_pokers.remove(48)
+            self.__num_red2 = self.__num_red2 - 1
 
-            self.__has_red2 = False
-            self.__pending_message = "被抽走红2"
+        self.__pending_message = "被抽走红2"
 
     def get_owned_pokers(self):
         return self.__owned_pokers
@@ -217,6 +210,7 @@ class ServerPlayer(Player):
                 # received take2 or no take.
                 # 有人抢红2 。
                 elif self.get_player_status() == PlayerStatus.SingleOne.value:
+                    self.__room.set_game_mode(13)
                     self.__room.update_active_user_pos(self.get_player_pos())
                     for pos, new_player in enumerate(self.__room.users()):
                         if new_player is None:
@@ -248,6 +242,7 @@ class ServerPlayer(Player):
                     self.__room.move_to_next_player()
                     self.set_notify_message("不抢")
                     if notake_count == 4:
+                        self.__room.set_game_mode(22)
                         for pos, new_player in enumerate(self.__room.users()):
                             if new_player is None:
                                 logger.error("some one offline when NoTake")
@@ -257,6 +252,7 @@ class ServerPlayer(Player):
                             else:
                                 new_player.set_player_status(PlayerStatus.Handout)
                 elif self.get_player_status() == PlayerStatus.Share2.value:
+                    self.__room.set_game_mode(22)
                     if self.__room.get_user_count() < 4:
                         logger.error("failed action")
                         return
@@ -269,6 +265,7 @@ class ServerPlayer(Player):
                     self.set_player_status(PlayerStatus.Handout)
                     self.set_notify_message("让出一个红2给对家")
                 elif self.get_player_status() == PlayerStatus.NoShare.value:
+                    self.__room.set_game_mode(13)
                     self.set_player_status(PlayerStatus.Handout)
                 elif self.get_player_status() == PlayerStatus.Handout.value:
                     logger.info("We switched to Handout state")
@@ -284,6 +281,7 @@ class ServerPlayer(Player):
                 elif self.get_player_status() == PlayerStatus.RunOut.value:
                     logger.info("We received user {} run out".format(self.get_player_name()))
                     # should we move to next player ? NO move in move_to_next_player
+
                     pass
 
 

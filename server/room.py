@@ -48,12 +48,17 @@ class RoomImpl(AbstractGameRoom):
         self.__center_mode = CardMode.MODE_INVALID
         logger.info("Room handout order get current order pos " + str(self.__current_order_pos))
         self.__last_restore_broadcast_message = None
+        self.__runout_order = []
+        self.__game_mode = -1 # 22/13
 
     def reset_room_data(self):
         self.__game_started = False
         self.__center_pokers_owner_pos = -1
         self.__room_players = [None, None, None, None]
         self.__center_pokers = []
+        self.__runout_order = []
+        self.__game_mode = -1 # 22/13
+
         logger.info("Room id {} is reset game data".format(self.__room_id))
 
     def set_center_pokers(self, cards, owner_pos):
@@ -64,6 +69,10 @@ class RoomImpl(AbstractGameRoom):
 
     def room_id(self):
         return self.__room_id
+
+    def set_game_mode(self, mode):
+        logger.info("We are in {} mode".format(mode))
+        self.__game_mode = mode
 
     def move_to_next_player(self):
         self.__current_order_pos = (self.__current_order_pos + 1) % 4
@@ -112,7 +121,7 @@ class RoomImpl(AbstractGameRoom):
             logger.info("Player [ {} ] at pos {} dispatched cards {}".format(player.get_player_name(),
                                                                              pos, player_cards))
             player.set_player_owned_pokers(player_cards)
-            player.set_has_red2(player_cards.count(48) > 0)
+
 
     async def broadcast_message(self, message):
         for player in self.users():
@@ -213,7 +222,7 @@ class RoomImpl(AbstractGameRoom):
 
     async def assign_new_player(self, name, ws):
         new_player = ServerPlayer(name, pos=-1, ws=ws)
-        if self.get_user_count() > 3:
+        if self.get_user_count() > 3 or self.__game_started:
             return False, "Server:Single room is full, can't seat new user"
 
         new_player.set_room(self)
