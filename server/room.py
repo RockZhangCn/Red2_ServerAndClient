@@ -48,6 +48,7 @@ class RoomImpl(AbstractGameRoom):
         self.__center_mode = CardMode.MODE_INVALID
         logger.info("Room handout order get current order pos " + str(self.__current_order_pos))
         self.__last_restore_broadcast_message = None
+        self.__offline_player_pos = -1
         self.__runout_order = []
         self.__game_mode = -1 # 22/13
 
@@ -239,6 +240,7 @@ class RoomImpl(AbstractGameRoom):
                             "center_pokers": self.__center_pokers,
                             "center_mode": self.__center_mode,
                             "recover_pos": -1,
+                            "offline_pos": self.__offline_player_pos,
                             "status_all": user_status_info}
         self.__last_restore_broadcast_message = game_status_data
         s = json.dumps(game_status_data)
@@ -291,6 +293,7 @@ class RoomImpl(AbstractGameRoom):
                     await self.broadcast_user_status(-1)
                 else:
                     clear_user = user
+                    self.__offline_player_pos = pos
                     logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, self.get_user_count(), reason))
                     clear_user.set_player_status(PlayerStatus.Unlogin)
                     user.set_notify_message("退出房间了")
@@ -298,7 +301,7 @@ class RoomImpl(AbstractGameRoom):
                     self.__room_players[pos] = None
                     await self.broadcast_user_status(-1)
                     logger.info("we clear user [ {} ] left {} users".format(clear_name, self.get_user_count()))
-
+                    self.__offline_player_pos = -1
                     # last user, release room.
                     if self.get_user_count() == 0:
                         self.reset_room_data()
