@@ -77,8 +77,7 @@ class Player(object):
         while self.__num_red2 > 0:
             self.__owned_pokers.remove(48)
             self.__num_red2 = self.__num_red2 - 1
-
-        self.__pending_message = "被抽走红2"
+            self.__pending_message = "被抽走红2"
 
     def get_owned_pokers(self):
         return self.__owned_pokers

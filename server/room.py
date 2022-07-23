@@ -255,7 +255,7 @@ class RoomImpl(AbstractGameRoom):
 
     async def assign_new_player(self, name, ws):
         new_player = ServerPlayer(name, pos=-1, ws=ws)
-        if self.get_user_count() > 3 or self.__game_started:
+        if self.get_user_count() > 3:
             return False, "Server:Single room is full, can't seat new user"
 
         new_player.set_room(self)
