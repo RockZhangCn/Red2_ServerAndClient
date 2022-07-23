@@ -60,12 +60,12 @@ class Player(object):
 
     def set_player_owned_pokers(self, card_list):
         self.__owned_pokers = card_list
-        self.__num_red2 = card_list.count(48)
+        if self.get_player_status() not in (PlayerStatus.Handout.value, PlayerStatus.RunOut):
+            self.__num_red2 = card_list.count(48)
         logger.info("set_player_owned_pokers : {} {}".format(len(card_list), card_list))
 
     def red2_count(self):
         return self.__num_red2
-
 
     def received_added_red2(self):
         self.__pending_message = "收到红2"
@@ -269,6 +269,7 @@ class ServerPlayer(Player):
 
                     # move 2, and set message.
                     self.hand_out_cards([48])
+                    self.__num_red2
                     face_pos = (self.get_player_pos() + 2) % 4
                     self.__room.users()[face_pos].received_added_red2()
                     self.__room.users()[face_pos].set_notify_message("从对家接收一个红2")
@@ -291,8 +292,19 @@ class ServerPlayer(Player):
                 elif self.get_player_status() == PlayerStatus.RunOut.value:
                     logger.info("We received user {} run out".format(self.get_player_name()))
                     # should we move to next player ? NO move in move_to_next_player
+                    hand_out_cards = msg["handout_pokers"]
+                    issued_pokers = copy.deepcopy(hand_out_cards)
+                    self.__room.move_to_next_player()
+                    if len(hand_out_cards) > 0:
+                        self.set_notify_message("No pokers".format(len(hand_out_cards)))
+                        self.hand_out_cards(hand_out_cards)
+                        self.__room.set_center_pokers(issued_pokers, self.get_player_pos())
+                    else:
+                        logger.error("We run out pokers but with 0 pokers in current hands.")
+
                     end = self.__room.judge_game_over(self.get_player_pos())
                     if end != GameResult.InProgress:
+                        self.__room.set_center_pokers([], -1)
                         for pos, new_player in enumerate(self.__room.users()):
                             if new_player is None:
                                 logger.error("some one offline when NoTake")
