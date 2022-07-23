@@ -63,8 +63,8 @@ class CardMode(object):
 
         elif cnt == 4:
             if value_set_len == 2:
-                if cards[0] == cards[1] == cards[2] or \
-                        cards[3] == cards[1] == cards[2]:
+                if cards[0]//4 == cards[1]//4 == cards[2]//4 or \
+                        cards[3]//4 == cards[1]//4 == cards[2]//4:
                     return CardMode.MODE_THREE_ONE
                 else:
                     return CardMode.MODE_INVALID
@@ -76,8 +76,8 @@ class CardMode(object):
 
         elif cnt == 5:
             if value_set_len == 2:
-                if (cards[0] == cards[1] == cards[2] and cards[3] == cards[4]) or \
-                        (cards[3] == cards[4] == cards[2] and cards[0] == cards[1]) :
+                if (cards[0]//4 == cards[1]//4 == cards[2]//4 and cards[3]//4 == cards[4]//4) or \
+                        (cards[3]//4 == cards[4]//4 == cards[2]//4 and cards[0]//4 == cards[1]//4) :
                     return CardMode.MODE_THREE_TWE
                 else:
                     return CardMode.MODE_INVALID

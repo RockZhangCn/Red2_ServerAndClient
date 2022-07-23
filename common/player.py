@@ -268,7 +268,7 @@ class ServerPlayer(Player):
                         return
 
                     # move 2, and set message.
-                    self.__room.hand_out_cards([48])
+                    self.hand_out_cards([48])
                     face_pos = (self.get_player_pos() + 2) % 4
                     self.__room.users()[face_pos].received_added_red2()
                     self.__room.users()[face_pos].set_notify_message("从对家接收一个红2")
@@ -316,8 +316,6 @@ class ServerPlayer(Player):
                                 else:
                                     new_player.set_game_result(PlayerResult.Win)
                                     new_player.set_notify_message("Win")
-
-
 
                 # room broad case all this user started.
                 # broadcast user status.

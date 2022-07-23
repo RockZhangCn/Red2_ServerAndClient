@@ -2,8 +2,6 @@ import json
 import random
 from abc import abstractmethod, ABCMeta
 
-import websockets
-
 from common.card import Card, CardMode
 from common.message import ServerMessage
 from common.player import ServerPlayer

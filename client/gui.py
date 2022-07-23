@@ -267,7 +267,7 @@ class Application(object):
             self.bottom_poker_canvas.tag_bind(image_id, '<ButtonRelease-1>', self.poker_click_callback)
             self.bottom_canvas_draw_next_pos = x + 120
 
-        logger.info("Current Poker value list {}".format(self.__owned_poker_list))
+        #logger.info("Current Poker value list {}".format(self.__owned_poker_list))
 
     def clear_all_canvas(self):
         self.left_poker_canvas.delete("all")
@@ -378,7 +378,7 @@ class Application(object):
                                 elif player_status == PlayerStatus.Handout.value:
                                     self.user_button_handout.config(state="active")
                                     # 不是我们出的或没人出过牌，禁用过牌
-                                    if msg['center_poker_issuer'] == self.we_seat_pos:
+                                    if msg['center_poker_issuer'] == self.we_seat_pos or msg['center_poker_issuer'] == -1:
                                         self.user_button_skip.config(state="disabled")
                                     else:
                                         self.user_button_skip.config(state="active")
@@ -519,10 +519,10 @@ class Application(object):
         self.__center_pokers_list = poker_list
         self.show_center_pokers()
 
-        for c in self.__center_pokers_list:
-            self.__owned_poker_list.remove(c)
-
-        self.show_bottom_pokers(self.__owned_poker_list)
+        # for c in self.__center_pokers_list:
+        #     self.__owned_poker_list.remove(c)
+        #
+        # self.show_bottom_pokers(self.__owned_poker_list)
 
     def button_skip(self):
         if self.player:
