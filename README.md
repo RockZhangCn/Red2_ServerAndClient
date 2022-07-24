@@ -22,7 +22,13 @@ UI Thread and Com Thread                            SingleThread
 ![avatar](screenshots/4.png)
 
 ## 如何运行
+请看install.txt安装相应的组件。
 ### 服务端 
 直接运行new_server.py
 ### 客户端
 直接运行gui.py
+#### [Android 客户端](https://github.com/RockZhangCn/Red2-Android-Client)
+#### Android客户端运行截图
+![avatar](screenshots/5.png)
+![avatar](screenshots/6.png)
+
