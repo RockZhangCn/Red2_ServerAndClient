@@ -29,6 +29,6 @@ UI Thread and Com Thread                            SingleThread
 直接运行gui.py
 #### [Android 客户端](https://github.com/RockZhangCn/Red2-Android-Client)
 #### Android客户端运行截图
-![avatar](screenshots/5.png)
-![avatar](screenshots/6.png)
+![avatar](screenshots/5.jpg)
+![avatar](screenshots/6.jpg)
 
