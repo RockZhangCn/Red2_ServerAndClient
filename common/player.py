@@ -13,6 +13,7 @@ from log.log import logger
 
 class Player(object):
     def __init__(self, name, pos, ws):
+        self.__backup_status = None
         self.__game_result = GameResult.InProgress
         self.__name = name
         self.__pos = pos
@@ -42,6 +43,12 @@ class Player(object):
 
     def set_player_status(self, status):
         self.__status = status
+
+    def save_backup_status(self):
+        self.__backup_status = self.__status
+
+    def restore_backup_status(self):
+        self.__status = self.__backup_status
 
     def set_player_name(self, name):
         self.__name = name
@@ -305,6 +312,8 @@ class ServerPlayer(Player):
                     end = self.__room.judge_game_over(self.get_player_pos())
                     if end != GameResult.InProgress:
                         self.__room.set_center_pokers([], -1)
+                        self.__room.clear_runout_order()
+
                         for pos, new_player in enumerate(self.__room.users()):
                             if new_player is None:
                                 logger.error("some one offline when NoTake")

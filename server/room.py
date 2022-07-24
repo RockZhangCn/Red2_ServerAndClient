@@ -45,10 +45,9 @@ class RoomImpl(AbstractGameRoom):
         self.__current_order_pos = random.randint(0, 10000) % 4
         self.__center_mode = CardMode.MODE_INVALID
         logger.info("Room handout order get current order pos " + str(self.__current_order_pos))
-        self.__last_restore_broadcast_message = None
         self.__offline_player_pos = -1
         self.__runout_order = []
-        self.__game_mode = -1 # 22/13
+        self.__game_mode = -1  # 22/13
 
     def reset_room_data(self):
         self.__game_started = False
@@ -56,9 +55,12 @@ class RoomImpl(AbstractGameRoom):
         self.__room_players = [None, None, None, None]
         self.__center_pokers = []
         self.__runout_order = []
-        self.__game_mode = -1 # 22/13
+        self.__game_mode = -1  # 22/13
 
         logger.info("Room id {} is reset game data".format(self.__room_id))
+
+    def clear_runout_order(self):
+        self.__runout_order.clear()
 
     def set_center_pokers(self, cards, owner_pos):
         logger.info("Server set center user pos [ {} ] issued pokers {}".format(owner_pos, cards))
@@ -73,9 +75,9 @@ class RoomImpl(AbstractGameRoom):
         if self.__game_mode == 22:
             for i in self.__runout_order:
                 if self.__room_players[i].red2_count() > 0:
-                    red2_score += (4-i)
+                    red2_score += (4 - i)
                 else:
-                    non_red_score += (4-i)
+                    non_red_score += (4 - i)
 
             if red2_score == 5 and non_red_score == 5:
                 return GameResult.Peace
@@ -152,20 +154,11 @@ class RoomImpl(AbstractGameRoom):
                                                                              pos, player_cards))
             player.set_player_owned_pokers(player_cards)
 
-
     async def broadcast_message(self, message):
         for player in self.users():
             if player is None or (player.get_player_status() == PlayerStatus.Offline):
                 continue
             await player.send_msg(message)
-
-    def get_user_status_from_restore_message(self, name):
-        if self.__last_restore_broadcast_message:
-            for player in self.__last_restore_broadcast_message["status_all"]:
-                if player["player_name"] == name:
-                    return PlayerStatus(player["status"])
-
-        return PlayerStatus.Handout
 
     # offline restore to online.
     async def update_user_websocket(self, name, ws):
@@ -176,8 +169,6 @@ class RoomImpl(AbstractGameRoom):
                 continue
             if player.get_player_name() == name and player.get_player_status() == PlayerStatus.Offline:
                 player.set_websocket(ws)
-                status = self.get_user_status_from_restore_message(name)
-                player.set_player_status(status)
                 find_player = player
                 break
 
@@ -186,10 +177,10 @@ class RoomImpl(AbstractGameRoom):
             return False, "Server:user has logged in, don't login twice."
         # build seated message.
         find_player.set_notify_message("重新上线了")
-        self.__last_restore_broadcast_message['recover_pos'] = find_player.get_player_pos()
+        find_player.restore_backup_status()
         # send restore message.
         logger.info("User {} restore online to broadcast".format(find_player.get_player_name()))
-        await self.broadcast_restore_message()
+        await self.broadcast_user_status(find_player.get_player_pos())
         # player setup heartbeat and send/recv.
         await find_player.setup_message_loop()
         return True, "Success relogin."
@@ -240,16 +231,10 @@ class RoomImpl(AbstractGameRoom):
                             "recover_pos": -1,
                             "offline_pos": self.__offline_player_pos,
                             "status_all": user_status_info}
-        self.__last_restore_broadcast_message = game_status_data
+
         s = json.dumps(game_status_data)
         logger.info("Server broad_cast_user_status {} users ---> {}".format(self.get_user_count(), s))
         await self.broadcast_message(s)
-
-    async def broadcast_restore_message(self):
-        if self.__last_restore_broadcast_message:
-            s = json.dumps(self.__last_restore_broadcast_message)
-            logger.info("Server broad_cast_user_status {} users ---> {}".format(self.get_user_count(), s))
-            await self.broadcast_message(s)
 
     async def assign_new_player(self, name, ws):
         new_player = ServerPlayer(name, pos=-1, ws=ws)
@@ -285,14 +270,19 @@ class RoomImpl(AbstractGameRoom):
                 if user.get_player_status() in (
                         PlayerStatus.SingleOne, PlayerStatus.Share2, PlayerStatus.Handout) and \
                         self.__game_started:
+                    self.__offline_player_pos = pos
+                    user.save_backup_status()
                     user.set_player_status(PlayerStatus.Offline)
                     user.set_notify_message("断线了")
                     logger.info("We set user [{}] in Offline status ".format(user.get_player_name()))
                     await self.broadcast_user_status(-1)
-                else:
+                    self.__offline_player_pos = -1
+                elif user.get_player_status() != PlayerStatus.Offline:
                     clear_user = user
                     self.__offline_player_pos = pos
-                    logger.debug("clear_user pos {} there are {} players for reason {}".format(pos, self.get_user_count(), reason))
+                    logger.debug(
+                        "clear_user pos {} there are {} players for reason {}".format(pos, self.get_user_count(),
+                                                                                      reason))
                     clear_user.set_player_status(PlayerStatus.Unlogin)
                     user.set_notify_message("退出房间了")
                     clear_name = clear_user.get_player_name()
